@@ -79,7 +79,7 @@ export default function TopBooksScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Top Beğenilen Kitaplar</Text>
+      <Text style={styles.header}>En Çok Beğenilen Kitaplar</Text>
       <FlatList
         data={books}
         keyExtractor={(item) => item.id}
