@@ -1,10 +1,22 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
-  View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Animated, PanResponder
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  Animated,
+  PanResponder,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Octicons from '@expo/vector-icons/Octicons';
 import { FavoritesContext } from '../../context/FavoritesContext';
+import { fetchBooksFromBackend } from '../../services/booksAPI';
 
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../services/firebase';
@@ -13,52 +25,34 @@ const cleanDocId = (title) => {
   if (!title) return 'unknown';
   let id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   id = id.replace(/^-+|-+$/g, '');
-  if (!id) return 'unknown';
-  return id;
+  return id || 'unknown';
 };
 
 export default function SwipeScreen({ navigation }) {
-  const [currentBook, setCurrentBook] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [bookDescription, setBookDescription] = useState('');
-  const [modalLoading, setModalLoading] = useState(false);
   const [titleModalVisible, setTitleModalVisible] = useState(false);
 
   const { addFavorite } = useContext(FavoritesContext);
   const position = useRef(new Animated.ValueXY()).current;
 
-  const fetchNextBook = async (pageNum) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`https://openlibrary.org/search.json?q=Türkçe&limit=1&page=${pageNum}`);
-      const json = await res.json();
-      if (json.docs && json.docs.length > 0) {
-        const book = json.docs[0];
-        setCurrentBook({
-          title: book.title,
-          author: book.author_name ? book.author_name[0] : 'Bilinmiyor',
-          coverId: book.cover_i,
-        });
-      } else {
-        setCurrentBook(null);
-      }
-    } catch (error) {
-      console.error('Kitap çekme hatası:', error);
-      setCurrentBook(null);
-    } finally {
-      setLoading(false);
-      position.setValue({ x: 0, y: 0 });
-    }
-  };
+  const currentBook = books[currentIndex] || null;
 
   useEffect(() => {
-    fetchNextBook(page);
-  }, [page]);
+    const loadBooks = async () => {
+      setLoading(true);
+      const bookList = await fetchBooksFromBackend(); // kendi API'nden çekiliyor
+      setBooks(bookList);
+      setLoading(false);
+    };
+    loadBooks();
+  }, []);
 
   const showNextBook = () => {
-    setPage(prev => prev + 1);
+    setCurrentIndex(prev => prev + 1);
   };
 
   const updateBookScore = async (book, field, incrementValue) => {
@@ -73,15 +67,17 @@ export default function SwipeScreen({ navigation }) {
           [field]: increment(incrementValue),
           title: book.title,
           author: book.author || 'Bilinmiyor',
-          coverId: book.coverId || null,
+          coverImageUrl: book.coverImageUrl || null,
+          description: book.description || '',
         });
       } else {
         await setDoc(bookDocRef, {
           title: book.title,
           author: book.author || 'Bilinmiyor',
-          coverId: book.coverId || null,
+          coverImageUrl: book.coverImageUrl || null,
           likes: field === 'likes' ? incrementValue : 0,
           dislikes: field === 'dislikes' ? incrementValue : 0,
+          description: book.description || '',
         });
       }
     } catch (error) {
@@ -89,31 +85,49 @@ export default function SwipeScreen({ navigation }) {
     }
   };
 
+  // Like butonuna basınca sadece like arttır ve sonraki kitaba geç
   const handleThumbsUp = async () => {
     if (currentBook) {
-      addFavorite(currentBook);
       await updateBookScore(currentBook, 'likes', 1);
     }
     Animated.timing(position, {
       toValue: { x: 500, y: 0 },
-      duration: 200,
+      duration: 400, // biraz yavaşlatıldı
       useNativeDriver: false,
     }).start(() => {
+      position.setValue({ x: 0, y: 0 });
       showNextBook();
     });
   };
 
+  // Dislike butonu
   const handleDislike = async () => {
     if (currentBook) {
       await updateBookScore(currentBook, 'dislikes', 1);
     }
     Animated.timing(position, {
       toValue: { x: -500, y: 0 },
-      duration: 200,
+      duration: 400, // biraz yavaşlatıldı
       useNativeDriver: false,
     }).start(() => {
+      position.setValue({ x: 0, y: 0 });
       showNextBook();
     });
+  };
+
+  // Kalp butonu: favorilere ekle ve sonraki kitaba geç (animasyon yana doğru)
+  const handleAddFavorite = () => {
+    if (currentBook) {
+      addFavorite(currentBook);
+      Animated.timing(position, {
+        toValue: { x: 500, y: 0 }, // yana doğru animasyon
+        duration: 400, // biraz yavaşlatıldı
+        useNativeDriver: false,
+      }).start(() => {
+        position.setValue({ x: 0, y: 0 });
+        showNextBook();
+      });
+    }
   };
 
   const panResponder = useRef(
@@ -137,33 +151,29 @@ export default function SwipeScreen({ navigation }) {
     })
   ).current;
 
-  const fetchDescription = async () => {
+  const fetchDescription = () => {
     if (!currentBook) return;
-
-    setModalLoading(true);
+    setBookDescription(currentBook.description || 'Kitap hakkında bilgi yok.');
     setModalVisible(true);
+  };
 
-    try {
-      const res = await fetch(
-        `https://openlibrary.org/search.json?title=${encodeURIComponent(currentBook.title)}&author=${encodeURIComponent(currentBook.author)}&limit=1`
-      );
-      const json = await res.json();
-      if (json.docs && json.docs.length > 0) {
-        const doc = json.docs[0];
-        const desc =
-          doc.first_sentence?.[0] ||
-          doc.subtitle ||
-          (doc.subject ? doc.subject.join(', ') : null) ||
-          'Kitap hakkında bilgi bulunamadı.';
-        setBookDescription(desc);
-      } else {
-        setBookDescription('Kitap hakkında bilgi bulunamadı.');
-      }
-    } catch (error) {
-      setBookDescription('Detay bilgisi alınırken hata oluştu.');
-    } finally {
-      setModalLoading(false);
-    }
+  const handleReportPress = () => {
+    const email = 'info.swipeitofficial@gmail.com';
+    const subject = encodeURIComponent(`Kitap Hatası Bildirimi: ${currentBook?.title || ''}`);
+    const body = encodeURIComponent(
+      `Merhaba,\n\n"${currentBook?.title || ''}" adlı kitapla ilgili bir hata veya sorun bildirmek istiyorum.\n\nLütfen detayları buraya yazınız...\n`
+    );
+    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+
+    Linking.canOpenURL(mailtoUrl)
+      .then((supported) => {
+        if (!supported) {
+          Alert.alert('Hata', 'E-posta gönderme özelliği desteklenmiyor.');
+        } else {
+          return Linking.openURL(mailtoUrl);
+        }
+      })
+      .catch((err) => Alert.alert('Hata', 'E-posta gönderilirken bir hata oluştu.'));
   };
 
   if (loading) {
@@ -186,43 +196,57 @@ export default function SwipeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('../../assets/swipeitlogo.png')} style={styles.logo} />
+        <Image
+          source={require('../../assets/swipeitlogo.png')}
+          style={styles.logo}
+        />
       </View>
 
       <View style={styles.bookInfo}>
         <TouchableOpacity onPress={() => setTitleModalVisible(true)}>
-          <Text style={styles.bookTitle} numberOfLines={1} ellipsizeMode="tail">
+          <Text
+            style={styles.bookTitle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {currentBook.title}
           </Text>
         </TouchableOpacity>
         <Text style={styles.author}>{currentBook.author}</Text>
       </View>
 
-      <Animated.View
-        style={[styles.card, { transform: position.getTranslateTransform() }]}
-        {...panResponder.panHandlers}
-      >
-        {currentBook.coverId ? (
-          <Image
-            source={{ uri: `https://covers.openlibrary.org/b/id/${currentBook.coverId}-L.jpg` }}
-            style={styles.cover}
-            resizeMode="cover"
-          />
-        ) : (
-          <Image
-            source={require('../../assets/swipeitlogo.png')}
-            style={styles.cover}
-            resizeMode="cover"
-          />
-        )}
-      </Animated.View>
+      <View style={styles.cardContainer}>
+        <Animated.View
+          style={[styles.card, { transform: position.getTranslateTransform() }]}
+          {...panResponder.panHandlers}
+        >
+          {currentBook.coverImageUrl ? (
+            <Image
+              source={{ uri: currentBook.coverImageUrl }}
+              style={styles.cover}
+              resizeMode="cover"
+            />
+          ) : (
+            <Image
+              source={require('../../assets/swipeitlogo.png')}
+              style={styles.cover}
+              resizeMode="cover"
+            />
+          )}
+        </Animated.View>
+
+        {/* Report icon cardın sağ üst köşesinde */}
+        <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
+          <Ionicons name="alert-circle-outline" size={28} color="red" />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.swipeButtons}>
         <TouchableOpacity onPress={handleDislike} style={styles.swipeButton}>
           <Octicons name="thumbsdown" size={30} color="red" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleThumbsUp} style={styles.swipeButton}>
+        <TouchableOpacity onPress={handleAddFavorite} style={styles.swipeButton}>
           <Ionicons name="heart-outline" size={30} color="black" />
         </TouchableOpacity>
 
@@ -250,16 +274,11 @@ export default function SwipeScreen({ navigation }) {
             >
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
-
-            {modalLoading ? (
-              <ActivityIndicator size="large" color="red" />
-            ) : (
-              <ScrollView>
-                <Text style={styles.modalTitle}>{currentBook.title}</Text>
-                <Text style={styles.modalAuthor}>Yazar: {currentBook.author}</Text>
-                <Text style={styles.modalDescription}>{bookDescription}</Text>
-              </ScrollView>
-            )}
+            <ScrollView>
+              <Text style={styles.modalTitle}>{currentBook.title}</Text>
+              <Text style={styles.modalAuthor}>Yazar: {currentBook.author}</Text>
+              <Text style={styles.modalDescription}>{bookDescription}</Text>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -330,18 +349,27 @@ const styles = StyleSheet.create({
     color: 'gray',
     textAlign: 'center',
   },
-  card: {
+  cardContainer: {
     width: '80%',
     height: 420,
+    marginBottom: 20,
+  },
+  card: {
+    flex: 1,
     backgroundColor: '#f5f5f5',
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 3,
-    marginBottom: 20,
   },
   cover: {
     width: '100%',
     height: '100%',
+  },
+  reportButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 20,
   },
   swipeButtons: {
     bottom: 85,

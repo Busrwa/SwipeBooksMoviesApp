@@ -1,10 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 export default function PrivacyPolicyScreen() {
   const navigation = useNavigation();
+
+  const handleEmailPress = () => {
+    Linking.openURL('mailto:info.swipeitofficial@gmail.com');
+  };
 
   return (
     <View style={styles.container}>
@@ -55,7 +59,7 @@ export default function PrivacyPolicyScreen() {
         <Text style={styles.sectionTitle}>7. Kullanıcı Hakları</Text>
         <Text style={styles.text}>
           Kullanıcılar, kendileriyle ilgili bilgileri inceleme, düzeltme veya silme hakkına sahiptir. 
-          Bu talepler için bizimle uygulama içinden veya destek e-postası üzerinden iletişime geçebilirsiniz.
+          Bu talepler için bizimle uygulama içinden veya aşağıdaki destek e-posta adresinden iletişime geçebilirsiniz.
         </Text>
 
         <Text style={styles.sectionTitle}>8. Değişiklikler</Text>
@@ -65,7 +69,10 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={styles.sectionTitle}>9. İletişim</Text>
         <Text style={styles.text}>
-          Sorularınız veya talepleriniz için: destek@uygulama.com adresinden bize ulaşabilirsiniz.
+          Sorularınız veya talepleriniz için: {' '}
+          <Text style={styles.emailLink} onPress={handleEmailPress}>
+            info.swipeitofficial@gmail.com
+          </Text>
         </Text>
       </ScrollView>
     </View>
@@ -107,5 +114,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#444',
+  },
+  emailLink: {
+    color: 'red',
+    textDecorationLine: 'underline',
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, Modal,
+  ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
@@ -14,8 +15,8 @@ export default function ProfileScreen() {
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [messageType, setMessageType] = useState('success');
-
   const [username, setUsername] = useState('');
+
   const auth = getAuth();
   const user = auth.currentUser;
   const navigation = useNavigation();
@@ -67,7 +68,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -93,39 +94,29 @@ export default function ProfileScreen() {
           <Text style={styles.optionText}>Şifre Değiştir</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => navigation.navigate('PrivacyPolicy')}
-        >
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('PrivacyPolicy')}>
           <Text style={styles.optionText}>Gizlilik Politikası</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => navigation.navigate('TermsOfUse')}
-        >
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('TermsOfUse')}>
           <Text style={styles.optionText}>Kullanım Koşulları</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.optionButton, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={[styles.optionText, { color: 'red' }]}>Çıkış Yap</Text>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('HelpSupport')}>
+          <Text style={styles.optionText}>Yardım & Destek</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={[styles.optionButton, styles.logoutButton]} onPress={handleLogout}>
+        <Text style={[styles.optionText, { color: 'red', textAlign: 'center' }]}>Çıkış Yap</Text>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <Text style={styles.versionText}>Uygulama Versiyonu 1.0.0</Text>
       </View>
 
       {/* Şifre Sıfırlama Modalı */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => !loading && setModalVisible(false)}
-      >
+      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => !loading && setModalVisible(false)}>
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <TouchableOpacity
@@ -144,10 +135,7 @@ export default function ProfileScreen() {
             {loading ? (
               <ActivityIndicator size="large" color="#f44336" style={{ marginTop: 15 }} />
             ) : (
-              <TouchableOpacity
-                style={styles.sendButton}
-                onPress={handleSendResetEmail}
-              >
+              <TouchableOpacity style={styles.sendButton} onPress={handleSendResetEmail}>
                 <Text style={styles.sendButtonText}>Gönder</Text>
               </TouchableOpacity>
             )}
@@ -175,25 +163,25 @@ export default function ProfileScreen() {
             />
             <Text style={styles.messageModalText}>{messageText}</Text>
 
-            <TouchableOpacity
-              style={styles.messageModalButton}
-              onPress={() => setMessageModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.messageModalButton} onPress={() => setMessageModalVisible(false)}>
               <Text style={styles.messageModalButtonText}>Tamam</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 70,
-    paddingHorizontal: 20,
     backgroundColor: '#fff',
     flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 70,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -234,7 +222,7 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   optionsSection: {
-    marginBottom: 50,
+    marginBottom: 20,
   },
   optionButton: {
     paddingVertical: 15,
@@ -247,10 +235,11 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderBottomWidth: 0,
-    marginTop: 20,
+    
   },
   footer: {
     alignItems: 'center',
+    marginTop: 30,
   },
   versionText: {
     color: 'gray',

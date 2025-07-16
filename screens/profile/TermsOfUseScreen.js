@@ -1,10 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 export default function TermsOfUseScreen() {
   const navigation = useNavigation();
+
+  const handleEmailPress = () => {
+    Linking.openURL('mailto:info.swipeitofficial@gmail.com');
+  };
 
   return (
     <View style={styles.container}>
@@ -57,6 +61,14 @@ export default function TermsOfUseScreen() {
         <Text style={styles.text}>
           Bu koşullar 1 Temmuz 2025 itibariyle geçerlidir.
         </Text>
+
+        <Text style={styles.sectionTitle}>9. İletişim</Text>
+        <Text style={styles.text}>
+          Sorularınız veya talepleriniz için:{' '}
+          <Text style={styles.emailLink} onPress={handleEmailPress}>
+            info.swipeitofficial@gmail.com
+          </Text>
+        </Text>
       </ScrollView>
     </View>
   );
@@ -97,5 +109,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#444',
+  },
+  emailLink: {
+    color: 'red',
+    textDecorationLine: 'underline',
   },
 });

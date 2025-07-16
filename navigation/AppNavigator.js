@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import MainTabNavigator from './TabNavigator';
+import KVKK from '../screens/auth/KVKK';
 
 const Stack = createNativeStackNavigator();
 
@@ -14,6 +15,7 @@ export default function AppNavigator() {
       <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="KVKK" component={KVKK} />
         <Stack.Screen name="Main" component={MainTabNavigator} />
       </Stack.Navigator>
       </NavigationContainer>

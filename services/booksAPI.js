@@ -1,18 +1,17 @@
-export async function fetchTurkishBooks() {
+export async function fetchBooksFromBackend() {
   try {
-    // Daha gerçekçi bir Türkçe sonuç araması
-    const response = await fetch('https://openlibrary.org/search.json?q=Türkçe&limit=20');
-    const json = await response.json();
+    const response = await fetch('http://192.168.0.13:8000/api/books/');
+    const data = await response.json();
 
-    return json.docs
-      .filter(book => book.title && book.author_name) // kitap başlığı ve yazar adı olanlar
-      .map(book => ({
-        title: book.title,
-        author: book.author_name ? book.author_name[0] : 'Bilinmeyen',
-        coverId: book.cover_i,
-      }));
+    return data.map(book => ({
+      id: book.id,
+      title: book.title,
+      author: book.author?.name || 'Bilinmiyor',
+      description: book.description || 'Açıklama yok.',
+      coverImageUrl: book.cover_image_url || null,
+    }));
   } catch (error) {
-    console.error(error);
+    console.error('Kitap verisi alınamadı:', error);
     return [];
   }
 }

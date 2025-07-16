@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { auth, db } from '../services/firebase'; // firebase servisini import et
+import { auth, db } from '../services/firebase'; 
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 export const FavoritesContext = createContext();
@@ -33,33 +33,36 @@ export const FavoritesProvider = ({ children }) => {
 
   // Kitap objesini temizle ve undefined/null değerleri engelle
   const cleanBook = (book) => ({
-    title: book.title || 'Bilinmiyor',
-    author: book.author || 'Bilinmiyor',
-    coverId: book.coverId !== undefined ? book.coverId : null,
-  });
+  title: book.title || 'Bilinmiyor',
+  author: book.author || 'Bilinmiyor',
+  coverImageUrl: book.coverImageUrl || null,  // Burayı değiştir
+  description: book.description || '',
+});
+
 
   // Favori ekle: hem state güncelle hem Firestore'a ekle
   const addFavorite = async (book) => {
-    if (!user) return;
+  if (!user) return;
 
-    const clean = cleanBook(book);
+  const clean = cleanBook(book);
 
-    setFavorites((prev) => {
-      if (prev.some(item => item.title === clean.title && item.author === clean.author)) {
-        return prev;
-      }
-      return [...prev, clean];
-    });
-
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      await updateDoc(docRef, {
-        favorites: arrayUnion(clean),
-      });
-    } catch (error) {
-      console.error('Favori eklenirken hata:', error);
+  setFavorites((prev) => {
+    if (prev.some(item => item.title === clean.title && item.author === clean.author)) {
+      return prev;
     }
-  };
+    return [...prev, clean];
+  });
+
+  try {
+    const docRef = doc(db, 'users', user.uid);
+    await updateDoc(docRef, {
+      favorites: arrayUnion(clean),
+    });
+  } catch (error) {
+    console.error('Favori eklenirken hata:', error);
+  }
+};
+
 
   // Favori çıkar: hem state güncelle hem Firestore'dan çıkar
   const removeFavorite = async (book) => {

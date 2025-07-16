@@ -1,21 +1,27 @@
 import React, { useContext, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, Image,
-  TouchableOpacity, Modal
+  TouchableOpacity, Modal, ScrollView
 } from 'react-native';
 import { FavoritesContext } from '../../context/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function FavoriteScreen() {
   const { favorites, removeFavorite } = useContext(FavoritesContext);
+
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
+  const [bookModalVisible, setBookModalVisible] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+
+  // Silme modalını aç
   const openConfirmModal = (item) => {
     setItemToDelete(item);
     setConfirmModalVisible(true);
   };
 
+  // Silme onayla
   const confirmDelete = () => {
     if (itemToDelete) {
       removeFavorite(itemToDelete);
@@ -24,33 +30,54 @@ export default function FavoriteScreen() {
     setItemToDelete(null);
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      {item.coverId ? (
-        <Image
-          source={{ uri: `https://covers.openlibrary.org/b/id/${item.coverId}-M.jpg` }}
-          style={styles.cover}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.cover, styles.noCover]}>
-          <Text style={styles.noCoverText}>Kapak Yok</Text>
-        </View>
-      )}
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-          {item.title}
-        </Text>
-        <Text style={styles.author}>{item.author}</Text>
-      </View>
+  // Kitap açıklama modalını aç
+  const openBookModal = (item) => {
+    setSelectedBook(item);
+    setBookModalVisible(true);
+  };
+
+  // Kitap açıklama modalını kapat
+  const closeBookModal = () => {
+    setSelectedBook(null);
+    setBookModalVisible(false);
+  };
+
+  const renderItem = ({ item }) => {
+    const coverSource = item.coverImageUrl ? { uri: item.coverImageUrl } : null;
+
+    return (
       <TouchableOpacity
-        onPress={() => openConfirmModal(item)}
-        style={styles.deleteButton}
+        style={styles.card}
+        onPress={() => openBookModal(item)}  // Kart tıklanınca açıklama modalı açılır
+        activeOpacity={0.8}
       >
-        <Ionicons name="trash-outline" size={24} color="red" />
+        {coverSource ? (
+          <Image source={coverSource} style={styles.cover} resizeMode="cover" />
+        ) : (
+          <View style={[styles.cover, styles.noCover]}>
+            <Text style={styles.noCoverText}>Kapak Yok</Text>
+          </View>
+        )}
+
+        <View style={styles.info}>
+          <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+            {item.title}
+          </Text>
+          <Text style={styles.author}>{item.author}</Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();  // Kart tıklamasını engelle
+            openConfirmModal(item);
+          }}
+          style={styles.deleteButton}
+        >
+          <Ionicons name="trash-outline" size={24} color="red" />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -63,13 +90,41 @@ export default function FavoriteScreen() {
       ) : (
         <FlatList
           data={favorites}
-          keyExtractor={(item, index) => item.title + index}
+          keyExtractor={(item, index) => item.id?.toString() || item.title + index}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 30 }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
+      {/* Kitap Açıklama Modalı */}
+      <Modal
+        visible={bookModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeBookModal}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              onPress={closeBookModal}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={30} color="black" />
+            </TouchableOpacity>
+
+            <ScrollView>
+              <Text style={styles.modalTitle}>{selectedBook?.title}</Text>
+              <Text style={styles.modalAuthor}>Yazar: {selectedBook?.author}</Text>
+              <Text style={styles.modalDescription}>
+                {selectedBook?.description || 'Açıklama bulunamadı.'}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Silme Onay Modalı */}
       <Modal
         visible={confirmModalVisible}
         animationType="slide"
@@ -172,8 +227,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'gray',
   },
-
-  /** ✅ Modal Styles (SwipeScreen modalına benziyor) */
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -197,12 +250,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
+  modalAuthor: {
+    fontSize: 16,
+    color: 'gray',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
   modalDescription: {
     fontSize: 16,
     lineHeight: 22,
-    textAlign: 'center',
+    textAlign: 'justify',
     color: 'gray',
-    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row',
