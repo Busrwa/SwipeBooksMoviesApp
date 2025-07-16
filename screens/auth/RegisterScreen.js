@@ -9,8 +9,8 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-  Linking,
-  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../services/firebase';
@@ -20,10 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 // Checkbox için basit bileşen
 function CheckBox({ value, onValueChange }) {
   return (
-    <TouchableOpacity
-      onPress={() => onValueChange(!value)}
-      style={styles.checkboxContainer}
-    >
+    <TouchableOpacity onPress={() => onValueChange(!value)} style={styles.checkboxContainer}>
       <View style={[styles.checkbox, value && styles.checkboxChecked]} />
     </TouchableOpacity>
   );
@@ -90,76 +87,100 @@ export default function RegisterScreen() {
       setLoading(false);
     } catch (error) {
       console.error(error);
-      showModal('Kayıt Hatası', error.message);
+      // Firebase hata kodlarına göre mesaj özelleştirme
+      let message = 'Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'Bu email zaten kayıtlı.';
+      } else if (error.code === 'auth/invalid-email') {
+        message = 'Geçersiz email adresi.';
+      } else if (error.code === 'auth/weak-password') {
+        message = 'Şifre çok zayıf. En az 6 karakter olmalıdır.';
+      } else if (error.code === 'auth/network-request-failed') {
+        message = 'İnternet bağlantınızı kontrol edin.';
+      }
+      showModal('Kayıt Hatası', message);
       setLoading(false);
     }
   };
 
-  // KVKK metni ekranına yönlendirme
   const openKVKK = () => {
-    navigation.navigate('KVKK'); // KVKK sayfasını navigation'a eklediğini varsayıyorum
+    navigation.navigate('KVKK');
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('../../assets/swipeitlogo.png')} style={styles.logo} />
+    <View style={styles.outerContainer}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.innerContainer}>
+            <Image source={require('../../assets/swipeitlogo.png')} style={styles.logo} />
 
-      <Text style={styles.title}>Kayıt Ol</Text>
+            <Text style={styles.title}>Kayıt Ol</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Kullanıcı Adı"
-        placeholderTextColor="#888"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Kullanıcı Adı"
+              placeholderTextColor="#888"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#888"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Şifre"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Şifre"
+              placeholderTextColor="#888"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Şifre Tekrar"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Şifre Tekrar"
+              placeholderTextColor="#888"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
 
-      <View style={styles.kvkkContainer}>
-        <CheckBox value={kvkkAccepted} onValueChange={setKvkkAccepted} />
-        <Text style={styles.kvkkText}>
-          KVKK metnini okudum, kabul ediyorum.{' '}
-          <Text style={styles.kvkkLink} onPress={openKVKK}>
-            (Detaylar)
-          </Text>
-        </Text>
-      </View>
+            <View style={styles.kvkkContainer}>
+              <CheckBox value={kvkkAccepted} onValueChange={setKvkkAccepted} />
+              <Text style={styles.kvkkText}>
+                KVKK metnini okudum, kabul ediyorum.{' '}
+                <Text style={styles.kvkkLink} onPress={openKVKK}>
+                  (Detaylar)
+                </Text>
+              </Text>
+            </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kayıt Ol</Text>}
-      </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kayıt Ol</Text>}
+            </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.linkText}>Zaten hesabın var mı? Giriş Yap</Text>
-      </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.linkText}>Zaten hesabın var mı? Giriş Yap</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Modal Popup */}
       <Modal
@@ -182,6 +203,7 @@ export default function RegisterScreen() {
                   navigation.navigate('Login');
                 }
               }}
+              activeOpacity={0.8}
             >
               <Text style={styles.modalButtonText}>Tamam</Text>
             </TouchableOpacity>
@@ -193,12 +215,23 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  outerContainer: {
+    flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  innerContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
     paddingHorizontal: 20,
+    paddingTop: 80,
+    paddingBottom: 40,
   },
   logo: {
     width: 200,

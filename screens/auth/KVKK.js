@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Expo kullanıyorsan bu, yoksa başka icon paketi kullanabilirsin
+import { Ionicons } from '@expo/vector-icons';
 
 export default function KVKK({ navigation }) {
   return (
@@ -12,11 +12,10 @@ export default function KVKK({ navigation }) {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.title}>Kişisel Verilerin Korunması Hakkında Aydınlatma Metni</Text>
-          {/* Sağ tarafta boş yer, başlığı ortalamak için */}
-          <View style={{ width: 24 }} />
+          <View style={{ width: 24 }} /> 
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 30 }}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Text style={styles.paragraph}>
             İşbu metin, Kişisel Verilerin Korunması Kanunu (“KVKK”) ve ilgili mevzuat uyarınca,
             SwipeIt uygulaması kullanıcılarının kişisel verilerinin işlenme süreçleri hakkında
@@ -72,13 +71,12 @@ export default function KVKK({ navigation }) {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    paddingTop: 50,
-    paddingBottom: 50,
     backgroundColor: 'white',
   },
   container: { 
     flex: 1, 
     paddingHorizontal: 20,
+    paddingTop: 40,
   },
   header: {
     flexDirection: 'row',
@@ -97,19 +95,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     textAlign: 'center' 
   },
-  scrollView: { 
-    flex: 1 
+  scrollContent: {
+    paddingBottom: 70,
   },
   heading: { 
     fontSize: 16, 
     fontWeight: 'bold', 
     marginTop: 15, 
-    marginBottom: 5 
+    marginBottom: 5,
+    color: '#222',
   },
   paragraph: { 
     fontSize: 14, 
-    lineHeight: 20, 
-    color: '#444' 
+    lineHeight: 22, 
+    color: '#444',
   },
   consent: {
     fontSize: 14,
