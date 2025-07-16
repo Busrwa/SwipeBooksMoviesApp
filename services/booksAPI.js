@@ -1,6 +1,6 @@
 export async function fetchBooksFromBackend() {
   try {
-    const response = await fetch('http://192.168.0.13:8000/api/books/');
+    const response = await fetch('https://swipebooksmoviesappbackend.onrender.com/api/books/');
     const data = await response.json();
 
     return data.map(book => ({
