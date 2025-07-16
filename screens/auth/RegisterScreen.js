@@ -17,7 +17,6 @@ import { auth, db } from '../../services/firebase';
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 
-// Checkbox için basit bileşen
 function CheckBox({ value, onValueChange }) {
   return (
     <TouchableOpacity onPress={() => onValueChange(!value)} style={styles.checkboxContainer}>
@@ -33,13 +32,14 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
-  // KVKK onayı durumu
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
 
   const showModal = (title, message) => {
@@ -87,7 +87,6 @@ export default function RegisterScreen() {
       setLoading(false);
     } catch (error) {
       console.error(error);
-      // Firebase hata kodlarına göre mesaj özelleştirme
       let message = 'Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.';
       if (error.code === 'auth/email-already-in-use') {
         message = 'Bu email zaten kayıtlı.';
@@ -125,7 +124,7 @@ export default function RegisterScreen() {
             <Text style={styles.title}>Kayıt Ol</Text>
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: 'black' }]}
               placeholder="Kullanıcı Adı"
               placeholderTextColor="#888"
               value={username}
@@ -134,7 +133,7 @@ export default function RegisterScreen() {
             />
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: 'black' }]}
               placeholder="Email"
               placeholderTextColor="#888"
               value={email}
@@ -143,23 +142,39 @@ export default function RegisterScreen() {
               keyboardType="email-address"
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre"
-              placeholderTextColor="#888"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, { color: 'black' }]}
+                placeholder="Şifre"
+                placeholderTextColor="#888"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre Tekrar"
-              placeholderTextColor="#888"
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, { color: 'black' }]}
+                placeholder="Şifre Tekrar"
+                placeholderTextColor="#888"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                <Text style={{ fontSize: 16 }}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.kvkkContainer}>
               <CheckBox value={kvkkAccepted} onValueChange={setKvkkAccepted} />
@@ -253,6 +268,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  passwordContainer: {
+    width: '100%',
+    position: 'relative',
+    marginBottom: 20,
+  },
+  passwordInput: {
+    paddingRight: 45,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
   },
   kvkkContainer: {
     flexDirection: 'row',

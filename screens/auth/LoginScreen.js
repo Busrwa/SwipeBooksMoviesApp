@@ -17,8 +17,8 @@ import { auth } from '../../services/firebase';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
@@ -72,7 +72,7 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.title}>Giriş Yap</Text>
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: 'black' }]}
               placeholder="Email"
               placeholderTextColor="#888"
               value={email}
@@ -81,14 +81,22 @@ export default function LoginScreen({ navigation }) {
               keyboardType="email-address"
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre"
-              placeholderTextColor="#888"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, { color: 'black' }]}
+                placeholder="Şifre"
+                placeholderTextColor="#888"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Text style={styles.buttonText}>Giriş Yap</Text>
@@ -166,6 +174,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  passwordContainer: {
+    width: '100%',
+    position: 'relative',
+    marginBottom: 20,
+  },
+  passwordInput: {
+    paddingRight: 45, // Göz simgesi için boşluk
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
   },
   button: {
     backgroundColor: 'red',
