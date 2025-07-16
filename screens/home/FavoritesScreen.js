@@ -1,10 +1,19 @@
 import React, { useContext, useState } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, Image,
-  TouchableOpacity, Modal, ScrollView
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { FavoritesContext } from '../../context/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function FavoriteScreen() {
   const { favorites, removeFavorite } = useContext(FavoritesContext);
@@ -48,7 +57,7 @@ export default function FavoriteScreen() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => openBookModal(item)}  // Kart tıklanınca açıklama modalı açılır
+        onPress={() => openBookModal(item)} // Kart tıklanınca açıklama modalı açılır
         activeOpacity={0.8}
       >
         {coverSource ? (
@@ -68,12 +77,13 @@ export default function FavoriteScreen() {
 
         <TouchableOpacity
           onPress={(e) => {
-            e.stopPropagation();  // Kart tıklamasını engelle
+            e.stopPropagation(); // Kart tıklamasını engelle
             openConfirmModal(item);
           }}
           style={styles.deleteButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="trash-outline" size={24} color="red" />
+          <Ionicons name="trash-outline" size={SCREEN_WIDTH * 0.06} color="red" />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -92,7 +102,7 @@ export default function FavoriteScreen() {
           data={favorites}
           keyExtractor={(item, index) => item.id?.toString() || item.title + index}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 30 }}
+          contentContainerStyle={{ paddingBottom: SCREEN_HEIGHT * 0.04 }}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -109,11 +119,12 @@ export default function FavoriteScreen() {
             <TouchableOpacity
               onPress={closeBookModal}
               style={styles.modalCloseButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={30} color="black" />
+              <Ionicons name="close" size={SCREEN_WIDTH * 0.08} color="black" />
             </TouchableOpacity>
 
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ paddingBottom: SCREEN_HEIGHT * 0.03 }}>
               <Text style={styles.modalTitle}>{selectedBook?.title}</Text>
               <Text style={styles.modalAuthor}>Yazar: {selectedBook?.author}</Text>
               <Text style={styles.modalDescription}>
@@ -136,8 +147,9 @@ export default function FavoriteScreen() {
             <TouchableOpacity
               onPress={() => setConfirmModalVisible(false)}
               style={styles.modalCloseButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={30} color="black" />
+              <Ionicons name="close" size={SCREEN_WIDTH * 0.08} color="black" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Kitabı Silmek İstiyor musun?</Text>
             <Text style={styles.modalDescription}>
@@ -165,13 +177,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    paddingTop: SCREEN_HEIGHT * 0.06,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   header: {
-    fontSize: 28,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.03,
     textAlign: 'center',
   },
   card: {
@@ -183,13 +195,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
-    padding: 10,
-    marginBottom: 15,
+    padding: SCREEN_WIDTH * 0.03,
+    marginBottom: SCREEN_HEIGHT * 0.02,
     alignItems: 'center',
   },
   cover: {
-    width: 70,
-    height: 100,
+    width: SCREEN_WIDTH * 0.18,
+    height: SCREEN_HEIGHT * 0.16,
     borderRadius: 8,
     backgroundColor: '#ddd',
   },
@@ -198,25 +210,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noCoverText: {
-    fontSize: 12,
+    fontSize: SCREEN_WIDTH * 0.035,
     color: '#999',
   },
   info: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: SCREEN_WIDTH * 0.04,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: SCREEN_HEIGHT * 0.008,
   },
   author: {
-    fontSize: 14,
+    fontSize: SCREEN_WIDTH * 0.04,
     color: 'gray',
   },
   deleteButton: {
-    padding: 8,
+    padding: SCREEN_WIDTH * 0.015,
   },
   emptyContainer: {
     flex: 1,
@@ -224,7 +236,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     color: 'gray',
   },
   modalBackground: {
@@ -232,58 +244,61 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
     width: '100%',
-    maxHeight: '80%',
-    padding: 20,
+    maxHeight: SCREEN_HEIGHT * 0.8,
+    padding: SCREEN_WIDTH * 0.05,
   },
   modalCloseButton: {
     alignSelf: 'flex-end',
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: SCREEN_WIDTH * 0.065,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: SCREEN_HEIGHT * 0.02,
     textAlign: 'center',
   },
   modalAuthor: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.05,
     color: 'gray',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.03,
     textAlign: 'center',
   },
   modalDescription: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: SCREEN_WIDTH * 0.045,
+    lineHeight: SCREEN_WIDTH * 0.06,
     textAlign: 'justify',
     color: 'gray',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginTop: SCREEN_HEIGHT * 0.03,
   },
   confirmButton: {
     backgroundColor: 'red',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: SCREEN_WIDTH * 0.07,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
     borderRadius: 20,
   },
   confirmButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: SCREEN_WIDTH * 0.045,
   },
   cancelButton: {
     backgroundColor: '#ccc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: SCREEN_WIDTH * 0.07,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
     borderRadius: 20,
   },
   cancelButtonText: {
     color: '#333',
     fontWeight: 'bold',
+    fontSize: SCREEN_WIDTH * 0.045,
   },
 });

@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import Octicons from '@expo/vector-icons/Octicons';
 import { FavoritesContext } from '../../context/FavoritesContext';
 import { fetchBooksFromBackend } from '../../services/booksAPI';
-
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 
@@ -44,19 +43,25 @@ export default function SwipeScreen({ navigation }) {
   useEffect(() => {
     const loadBooks = async () => {
       setLoading(true);
-      const bookList = await fetchBooksFromBackend(); // kendi API'nden çekiliyor
-      setBooks(bookList);
+      const bookList = await fetchBooksFromBackend();
+
+      // Kitapları karıştır (random sırada göster)
+      const shuffled = bookList
+        .map(value => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+
+      setBooks(shuffled);
       setLoading(false);
     };
+
     loadBooks();
   }, []);
 
-  const showNextBook = () => {
-    setCurrentIndex(prev => prev + 1);
-  };
+  const showNextBook = () => setCurrentIndex(prev => prev + 1);
 
   const updateBookScore = async (book, field, incrementValue) => {
-    if (!book || !book.title) return;
+    if (!book?.title) return;
     const docId = cleanDocId(book.title);
     const bookDocRef = doc(db, 'books', docId);
 
@@ -85,14 +90,11 @@ export default function SwipeScreen({ navigation }) {
     }
   };
 
-  // Like butonuna basınca sadece like arttır ve sonraki kitaba geç
   const handleThumbsUp = async () => {
-    if (currentBook) {
-      await updateBookScore(currentBook, 'likes', 1);
-    }
+    if (currentBook) await updateBookScore(currentBook, 'likes', 1);
     Animated.timing(position, {
       toValue: { x: 500, y: 0 },
-      duration: 400, // biraz yavaşlatıldı
+      duration: 400,
       useNativeDriver: false,
     }).start(() => {
       position.setValue({ x: 0, y: 0 });
@@ -100,14 +102,11 @@ export default function SwipeScreen({ navigation }) {
     });
   };
 
-  // Dislike butonu
   const handleDislike = async () => {
-    if (currentBook) {
-      await updateBookScore(currentBook, 'dislikes', 1);
-    }
+    if (currentBook) await updateBookScore(currentBook, 'dislikes', 1);
     Animated.timing(position, {
       toValue: { x: -500, y: 0 },
-      duration: 400, // biraz yavaşlatıldı
+      duration: 400,
       useNativeDriver: false,
     }).start(() => {
       position.setValue({ x: 0, y: 0 });
@@ -115,13 +114,12 @@ export default function SwipeScreen({ navigation }) {
     });
   };
 
-  // Kalp butonu: favorilere ekle ve sonraki kitaba geç (animasyon yana doğru)
   const handleAddFavorite = () => {
     if (currentBook) {
       addFavorite(currentBook);
       Animated.timing(position, {
-        toValue: { x: 500, y: 0 }, // yana doğru animasyon
-        duration: 400, // biraz yavaşlatıldı
+        toValue: { x: 500, y: 0 },
+        duration: 400,
         useNativeDriver: false,
       }).start(() => {
         position.setValue({ x: 0, y: 0 });
@@ -137,11 +135,9 @@ export default function SwipeScreen({ navigation }) {
         position.setValue({ x: gesture.dx, y: gesture.dy });
       },
       onPanResponderRelease: async (_, gesture) => {
-        if (gesture.dx > 120) {
-          await handleThumbsUp();
-        } else if (gesture.dx < -120) {
-          await handleDislike();
-        } else {
+        if (gesture.dx > 120) await handleThumbsUp();
+        else if (gesture.dx < -120) await handleDislike();
+        else {
           Animated.spring(position, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: false,
@@ -167,13 +163,10 @@ export default function SwipeScreen({ navigation }) {
 
     Linking.canOpenURL(mailtoUrl)
       .then((supported) => {
-        if (!supported) {
-          Alert.alert('Hata', 'E-posta gönderme özelliği desteklenmiyor.');
-        } else {
-          return Linking.openURL(mailtoUrl);
-        }
+        if (!supported) Alert.alert('Hata', 'E-posta gönderme özelliği desteklenmiyor.');
+        else return Linking.openURL(mailtoUrl);
       })
-      .catch((err) => Alert.alert('Hata', 'E-posta gönderilirken bir hata oluştu.'));
+      .catch(() => Alert.alert('Hata', 'E-posta gönderilirken bir hata oluştu.'));
   };
 
   if (loading) {
@@ -204,11 +197,7 @@ export default function SwipeScreen({ navigation }) {
 
       <View style={styles.bookInfo}>
         <TouchableOpacity onPress={() => setTitleModalVisible(true)}>
-          <Text
-            style={styles.bookTitle}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
+          <Text style={styles.bookTitle} numberOfLines={1} ellipsizeMode="tail">
             {currentBook.title}
           </Text>
         </TouchableOpacity>
@@ -221,21 +210,12 @@ export default function SwipeScreen({ navigation }) {
           {...panResponder.panHandlers}
         >
           {currentBook.coverImageUrl ? (
-            <Image
-              source={{ uri: currentBook.coverImageUrl }}
-              style={styles.cover}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: currentBook.coverImageUrl }} style={styles.cover} resizeMode="cover" />
           ) : (
-            <Image
-              source={require('../../assets/swipeitlogo.png')}
-              style={styles.cover}
-              resizeMode="cover"
-            />
+            <Image source={require('../../assets/swipeitlogo.png')} style={styles.cover} resizeMode="cover" />
           )}
         </Animated.View>
 
-        {/* Report icon cardın sağ üst köşesinde */}
         <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
           <Ionicons name="alert-circle-outline" size={28} color="red" />
         </TouchableOpacity>
@@ -245,11 +225,9 @@ export default function SwipeScreen({ navigation }) {
         <TouchableOpacity onPress={handleDislike} style={styles.swipeButton}>
           <Octicons name="thumbsdown" size={30} color="red" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={handleAddFavorite} style={styles.swipeButton}>
           <Ionicons name="heart-outline" size={30} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={handleThumbsUp} style={styles.swipeButton}>
           <Octicons name="thumbsup" size={30} color="green" />
         </TouchableOpacity>
@@ -260,6 +238,7 @@ export default function SwipeScreen({ navigation }) {
         <Ionicons name="arrow-forward" size={20} color="#fff" />
       </TouchableOpacity>
 
+      {/* Açıklama Modalı */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -268,10 +247,7 @@ export default function SwipeScreen({ navigation }) {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={styles.modalCloseButton}
-            >
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseButton}>
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
             <ScrollView>
@@ -283,6 +259,7 @@ export default function SwipeScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* Başlık Modalı */}
       <Modal
         visible={titleModalVisible}
         transparent={true}
@@ -291,16 +268,11 @@ export default function SwipeScreen({ navigation }) {
       >
         <View style={styles.modalBackground}>
           <View style={[styles.modalContainer, { maxHeight: '30%' }]}>
-            <TouchableOpacity
-              onPress={() => setTitleModalVisible(false)}
-              style={styles.modalCloseButton}
-            >
+            <TouchableOpacity onPress={() => setTitleModalVisible(false)} style={styles.modalCloseButton}>
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
             <ScrollView>
-              <Text style={[styles.modalTitle, { fontSize: 20 }]}>
-                {currentBook.title}
-              </Text>
+              <Text style={[styles.modalTitle, { fontSize: 20 }]}>{currentBook.title}</Text>
             </ScrollView>
           </View>
         </View>
@@ -332,7 +304,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 150,
     height: 50,
-    marginRight: 8,
   },
   bookInfo: {
     alignItems: 'center',

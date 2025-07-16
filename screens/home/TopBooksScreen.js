@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Image, ActivityIndicator,
-  Modal, TouchableOpacity, ScrollView
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { collection, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function TopBooksScreen() {
   const [books, setBooks] = useState([]);
@@ -25,17 +35,21 @@ export default function TopBooksScreen() {
     );
 
     // Gerçek zamanlı dinleme
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const results = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setBooks(results);
-      setLoading(false);
-    }, (error) => {
-      console.error('TopBooks gerçek zamanlı dinleme hatası:', error);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const results = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBooks(results);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('TopBooks gerçek zamanlı dinleme hatası:', error);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -72,7 +86,9 @@ export default function TopBooksScreen() {
         )}
 
         <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
           <Text style={styles.author}>{author}</Text>
           <View style={styles.stats}>
             <Ionicons name="heart" size={18} color="red" />
@@ -114,6 +130,7 @@ export default function TopBooksScreen() {
             <TouchableOpacity
               onPress={closeBookModal}
               style={styles.modalCloseButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
@@ -131,9 +148,9 @@ export default function TopBooksScreen() {
               ) : null}
 
               <Text style={styles.modalDescription}>
-                {selectedBook?.description
-                  ?? selectedBook?.bookDescription
-                  ?? 'Açıklama bulunamadı.'}
+                {selectedBook?.description ??
+                  selectedBook?.bookDescription ??
+                  'Açıklama bulunamadı.'}
               </Text>
             </ScrollView>
           </View>
@@ -147,8 +164,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    paddingTop: SCREEN_HEIGHT * 0.06, // dinamik üst boşluk (ör: %6 ekran yüksekliği)
+    paddingHorizontal: SCREEN_WIDTH * 0.05, // %5 ekran genişliği
   },
   loadingContainer: {
     flex: 1,
@@ -156,7 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    fontSize: 28,
+    fontSize: SCREEN_WIDTH * 0.07, // ekran genişliğine göre font
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
@@ -173,34 +190,36 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     elevation: 2,
     alignItems: 'center',
-    padding: 10,
+    padding: SCREEN_WIDTH * 0.03,
   },
   cover: {
-    width: 80,
-    height: 120,
+    width: SCREEN_WIDTH * 0.18, // ~80 px on 450px wide device
+    height: SCREEN_HEIGHT * 0.16, // ~120 px on 750px height device
     backgroundColor: '#e0e0e0',
     borderRadius: 8,
   },
   noCover: {
     backgroundColor: '#dcdcdc',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   noCoverText: {
     color: '#888',
-    fontSize: 14,
+    fontSize: SCREEN_WIDTH * 0.035,
     textAlign: 'center',
   },
   info: {
     flex: 1,
-    paddingLeft: 12,
+    paddingLeft: SCREEN_WIDTH * 0.03,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     fontWeight: '600',
     marginBottom: 4,
   },
   author: {
-    fontSize: 14,
+    fontSize: SCREEN_WIDTH * 0.038,
     color: 'gray',
     marginBottom: 8,
   },
@@ -210,7 +229,7 @@ const styles = StyleSheet.create({
   },
   likes: {
     marginLeft: 6,
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     color: 'red',
     fontWeight: 'bold',
   },
@@ -219,40 +238,40 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
     width: '100%',
-    maxHeight: '80%',
-    padding: 20,
+    maxHeight: SCREEN_HEIGHT * 0.8,
+    padding: SCREEN_WIDTH * 0.05,
   },
   modalCloseButton: {
     alignSelf: 'flex-end',
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: SCREEN_WIDTH * 0.06,
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
   },
   modalAuthor: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     color: 'gray',
     marginBottom: 15,
     textAlign: 'center',
   },
   modalCover: {
     width: '100%',
-    height: 200,
+    height: SCREEN_HEIGHT * 0.25,
     borderRadius: 12,
     marginBottom: 15,
     backgroundColor: '#e0e0e0',
   },
   modalDescription: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: SCREEN_WIDTH * 0.045,
+    lineHeight: SCREEN_WIDTH * 0.06,
     textAlign: 'justify',
     color: 'gray',
   },

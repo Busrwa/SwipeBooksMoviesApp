@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Modal,
-  ActivityIndicator, ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useNavigation } from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -123,8 +131,9 @@ export default function ProfileScreen() {
               style={styles.modalCloseButton}
               disabled={loading}
               onPress={() => setModalVisible(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={SCREEN_WIDTH * 0.07} color="#333" />
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Şifre Sıfırlama</Text>
@@ -157,9 +166,9 @@ export default function ProfileScreen() {
           ]}>
             <Ionicons
               name={messageType === 'success' ? "checkmark-circle-outline" : "close-circle-outline"}
-              size={48}
+              size={SCREEN_WIDTH * 0.12}
               color="#fff"
-              style={{ marginBottom: 10 }}
+              style={{ marginBottom: SCREEN_HEIGHT * 0.015 }}
             />
             <Text style={styles.messageModalText}>{messageText}</Text>
 
@@ -179,120 +188,120 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 70,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingTop: SCREEN_HEIGHT * 0.09,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingBottom: SCREEN_HEIGHT * 0.06,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: SCREEN_HEIGHT * 0.06,
   },
   avatar: {
     backgroundColor: '#f44336',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: SCREEN_WIDTH * 0.18,
+    height: SCREEN_WIDTH * 0.18,
+    borderRadius: (SCREEN_WIDTH * 0.18) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: SCREEN_WIDTH * 0.05,
   },
   avatarText: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: SCREEN_WIDTH * 0.1,
     fontWeight: 'bold',
   },
   username: {
-    fontSize: 26,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: '700',
     color: '#333',
+    flexShrink: 1,
   },
   infoSection: {
-    marginBottom: 30,
+    marginBottom: SCREEN_HEIGHT * 0.045,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: SCREEN_WIDTH * 0.06,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02,
     color: '#222',
   },
   infoText: {
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: SCREEN_WIDTH * 0.045,
+    marginBottom: SCREEN_HEIGHT * 0.01,
     color: '#555',
   },
   optionsSection: {
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.035,
   },
   optionButton: {
-    paddingVertical: 15,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   optionText: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     color: '#444',
   },
   logoutButton: {
     borderBottomWidth: 0,
-    
   },
   footer: {
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: SCREEN_HEIGHT * 0.04,
   },
   versionText: {
     color: 'gray',
-    fontSize: 14,
+    fontSize: SCREEN_WIDTH * 0.04,
   },
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
+    padding: SCREEN_WIDTH * 0.05,
     elevation: 5,
   },
   modalCloseButton: {
     alignSelf: 'flex-end',
-    padding: 5,
+    padding: SCREEN_WIDTH * 0.01,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: SCREEN_WIDTH * 0.06,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: SCREEN_HEIGHT * 0.015,
     color: '#222',
   },
   modalDescription: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     color: '#555',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.025,
   },
   sendButton: {
-    marginTop: 15,
+    marginTop: SCREEN_HEIGHT * 0.02,
     backgroundColor: '#f44336',
-    paddingVertical: 12,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
     borderRadius: 25,
     alignItems: 'center',
   },
   sendButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.05,
   },
   messageModalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SCREEN_WIDTH * 0.1,
   },
   messageModalContainer: {
-    padding: 25,
+    padding: SCREEN_WIDTH * 0.06,
     borderRadius: 15,
     width: '100%',
     alignItems: 'center',
@@ -305,20 +314,20 @@ const styles = StyleSheet.create({
   },
   messageModalText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   messageModalButton: {
     backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.08,
     borderRadius: 20,
   },
   messageModalButtonText: {
     color: '#333',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
   },
 });
