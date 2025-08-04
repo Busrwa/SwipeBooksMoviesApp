@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../services/firebase';
@@ -19,7 +20,13 @@ import { useNavigation } from '@react-navigation/native';
 
 function CheckBox({ value, onValueChange }) {
   return (
-    <TouchableOpacity onPress={() => onValueChange(!value)} style={styles.checkboxContainer}>
+    <TouchableOpacity
+      onPress={() => onValueChange(!value)}
+      style={styles.checkboxContainer}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel="KVKK Onayı"
+    >
       <View style={[styles.checkbox, value && styles.checkboxChecked]} />
     </TouchableOpacity>
   );
@@ -42,31 +49,75 @@ export default function RegisterScreen() {
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
 
+
   const showModal = (title, message) => {
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
   };
 
-  const handleRegister = async () => {
-    if (!email || !username || !password || !confirmPassword) {
-      showModal('Hata', 'Lütfen tüm alanları doldurun.');
-      return;
+  // Form Validasyon fonksiyonu
+  const validateForm = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[a-zA-Z0-9]+$/; // sadece harf ve rakam
+    const passwordRegex = /^[a-zA-Z0-9]+$/; // sadece harf ve rakam
+
+    if (!username.trim()) {
+      showModal('Hata', 'Kullanıcı adı boş bırakılamaz.');
+      return false;
     }
+    if (username.length < 3) {
+      showModal('Hata', 'Kullanıcı adı en az 3 karakter olmalıdır.');
+      return false;
+    }
+    if (!usernameRegex.test(username.trim())) {
+      showModal('Hata', 'Kullanıcı adı sadece harf ve rakamlardan oluşmalıdır. Özel karakter içeremez.');
+      return false;
+    }
+    if (!email.trim()) {
+      showModal('Hata', 'Email boş bırakılamaz.');
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      showModal('Hata', 'Lütfen geçerli bir e-posta adresi girin.');
+      return false;
+    }
+    if (!password) {
+      showModal('Hata', 'Şifre boş bırakılamaz.');
+      return false;
+    }
+    if (password.length < 6) {
+      showModal('Hata', 'Şifre en az 6 karakter olmalıdır.');
+      return false;
+    }
+    if (!confirmPassword) {
+      showModal('Hata', 'Şifre tekrar boş bırakılamaz.');
+      return false;
+    }
+    if (!passwordRegex.test(password)) {
+      showModal('Hata', 'Şifre sadece harf ve rakamlardan oluşmalıdır. Özel karakter içeremez.');
+      return false;
+    }
+
     if (password !== confirmPassword) {
       showModal('Hata', 'Şifreler uyuşmuyor.');
-      return;
+      return false;
     }
     if (!kvkkAccepted) {
       showModal('KVKK Onayı Gerekli', 'Devam etmek için KVKK metnini okuyup onaylamanız gerekmektedir.');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleRegister = async () => {
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username));
+      const q = query(usersRef, where('username', '==', username.trim()));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         showModal('Hata', 'Bu kullanıcı adı zaten alınmış. Başka bir tane deneyin.');
@@ -74,12 +125,12 @@ export default function RegisterScreen() {
         return;
       }
 
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
 
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        username: username,
+        username: username.trim(),
         createdAt: new Date(),
       });
 
@@ -89,9 +140,9 @@ export default function RegisterScreen() {
       console.error(error);
       let message = 'Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.';
       if (error.code === 'auth/email-already-in-use') {
-        message = 'Bu email zaten kayıtlı.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Geçersiz email adresi.';
+        message = 'Bu eposta zaten kayıtlı.';
+      } else if (error.code === 'auth/invalid-eposta') {
+        message = 'Geçersiz eposta adresi.';
       } else if (error.code === 'auth/weak-password') {
         message = 'Şifre çok zayıf. En az 6 karakter olmalıdır.';
       } else if (error.code === 'auth/network-request-failed') {
@@ -130,19 +181,27 @@ export default function RegisterScreen() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="username"
+              accessibilityLabel="Kullanıcı Adı"
+              returnKeyType="next"
             />
 
             <TextInput
               style={[styles.input, { color: 'black' }]}
-              placeholder="Email"
+              placeholder="E-posta"
               placeholderTextColor="#888"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              autoCorrect={false}
+              textContentType="emailAddress"
+              accessibilityLabel="Email"
+              returnKeyType="next"
             />
 
-            <View style={styles.passwordContainer}>
+            <View style={[styles.passwordContainer]}>
               <TextInput
                 style={[styles.input, styles.passwordInput, { color: 'black' }]}
                 placeholder="Şifre"
@@ -150,12 +209,17 @@ export default function RegisterScreen() {
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                autoComplete="password-new"
+                accessibilityLabel="Şifre"
+                returnKeyType="next"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
               >
-                <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+                <Text style={{ fontSize: 20 }}>{showPassword ? '🙈' : '👁️'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -167,30 +231,47 @@ export default function RegisterScreen() {
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                autoComplete="password-new"
+                accessibilityLabel="Şifre Tekrar"
+                returnKeyType="done"
               />
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeIcon}
+                accessibilityRole="button"
+                accessibilityLabel={showConfirmPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
               >
-                <Text style={{ fontSize: 16 }}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
+                <Text style={{ fontSize: 20 }}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.kvkkContainer}>
               <CheckBox value={kvkkAccepted} onValueChange={setKvkkAccepted} />
               <Text style={styles.kvkkText}>
-                KVKK metnini okudum, kabul ediyorum.{' '}
-                <Text style={styles.kvkkLink} onPress={openKVKK}>
+                Bu uygulamaya kayıt olarak, yukarıda belirtilen tüm koşulları okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan etmiş olursunuz.
+                {' '}
+                <Text style={styles.kvkkLink} onPress={openKVKK} accessibilityRole="link">
                   (Detaylar)
                 </Text>
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel="Kayıt Ol"
+            >
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kayıt Ol</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Login')}
+              accessibilityRole="button"
+              accessibilityLabel="Giriş Yap"
+              style={{ marginTop: 10 }}
+            >
               <Text style={styles.linkText}>Zaten hesabın var mı? Giriş Yap</Text>
             </TouchableOpacity>
           </View>
@@ -219,6 +300,8 @@ export default function RegisterScreen() {
                 }
               }}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Tamam"
             >
               <Text style={styles.modalButtonText}>Tamam</Text>
             </TouchableOpacity>
@@ -239,40 +322,39 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
   innerContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 80,
-    paddingBottom: 40,
   },
   logo: {
-    width: 200,
-    height: 60,
-    marginBottom: 30,
+    width: 180,
+    height: 50,
+    marginBottom: 15,
   },
   title: {
     fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 30,
+    fontWeight: '700',
+    marginBottom: 25,
+    color: '#000',
   },
   input: {
     width: '100%',
-    height: 50,
+    height: 48,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 15,
-    marginBottom: 20,
+    marginBottom: 12,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
   },
   passwordContainer: {
     width: '100%',
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 12,  // bu boşluk çok büyük, burayı küçült
   },
   passwordInput: {
     paddingRight: 45,
@@ -280,19 +362,20 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: 'absolute',
     right: 15,
-    top: 15,
+    top: Platform.OS === 'ios' ? 13 : 12,
   },
   kvkkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginVertical: 15,
     flexWrap: 'wrap',
+    maxWidth: '100%',
   },
   checkboxContainer: {
     width: 24,
     height: 24,
     borderWidth: 2,
-    borderColor: 'red',
+    borderColor: '#E63946',
     borderRadius: 5,
     marginRight: 10,
     justifyContent: 'center',
@@ -303,25 +386,30 @@ const styles = StyleSheet.create({
     height: 16,
   },
   checkboxChecked: {
-    backgroundColor: 'red',
+    backgroundColor: '#E63946',
     borderRadius: 3,
   },
   kvkkText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: '#333',
   },
   kvkkLink: {
-    color: 'red',
+    color: '#E63946',
     textDecorationLine: 'underline',
   },
   button: {
-    backgroundColor: 'red',
+    backgroundColor: '#E63946',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 20,
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: '#fff',
@@ -331,6 +419,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: 'gray',
     fontSize: 14,
+    textDecorationLine: 'underline',
   },
   modalOverlay: {
     flex: 1,
@@ -361,7 +450,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginTop: 20,
-    backgroundColor: 'red',
+    backgroundColor: '#E63946',
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 25,

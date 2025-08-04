@@ -12,13 +12,26 @@ import {
   PanResponder,
   Linking,
   Alert,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Octicons from '@expo/vector-icons/Octicons';
 import { FavoritesContext } from '../../context/FavoritesContext';
 import { fetchBooksFromBackend } from '../../services/booksAPI';
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, Timestamp } from 'firebase/firestore';
+
+const scale = SCREEN_WIDTH / 375; // 375 = iPhone 6/7/8 genişliği referans
+import LottieView from 'lottie-react-native';
+
+
+function normalize(size) {
+  const newSize = size * scale;
+  return Math.round(PixelRatio.roundToNearestPixel(newSize));
+}
+
 import { db } from '../../services/firebase';
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const cleanDocId = (title) => {
   if (!title) return 'unknown';
@@ -67,28 +80,43 @@ export default function SwipeScreen({ navigation }) {
 
     try {
       const docSnap = await getDoc(bookDocRef);
+      const commonData = {
+        title: book.title,
+        author: book.author || 'Bilinmiyor',
+        coverImageUrl: book.coverImageUrl || null,
+        description: book.description || '',
+      };
+
       if (docSnap.exists()) {
-        await updateDoc(bookDocRef, {
+        const updateData = {
+          ...commonData,
           [field]: increment(incrementValue),
-          title: book.title,
-          author: book.author || 'Bilinmiyor',
-          coverImageUrl: book.coverImageUrl || null,
-          description: book.description || '',
-        });
+        };
+
+        // Sadece beğeni için likesHistory'ye zaman damgası ekle
+        if (field === 'likes') {
+          updateData.likesHistory = arrayUnion(Timestamp.now());
+        }
+
+        await updateDoc(bookDocRef, updateData);
       } else {
-        await setDoc(bookDocRef, {
-          title: book.title,
-          author: book.author || 'Bilinmiyor',
-          coverImageUrl: book.coverImageUrl || null,
+        const newData = {
+          ...commonData,
           likes: field === 'likes' ? incrementValue : 0,
           dislikes: field === 'dislikes' ? incrementValue : 0,
-          description: book.description || '',
-        });
+        };
+
+        if (field === 'likes') {
+          newData.likesHistory = [Timestamp.now()];
+        }
+
+        await setDoc(bookDocRef, newData);
       }
     } catch (error) {
       console.error('Firestore update error:', error);
     }
   };
+
 
   const handleThumbsUp = async () => {
     if (currentBook) await updateBookScore(currentBook, 'likes', 1);
@@ -172,11 +200,17 @@ export default function SwipeScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="red" />
-        <Text>Kitaplar yükleniyor...</Text>
+        <LottieView
+          source={require('../../assets/loading.json')}
+          autoPlay
+          loop
+          style={{ width: 250, height: 250 }}
+        />
+        <Text style={{ marginTop: 10, fontSize: 16, color: 'gray' }}>Kitaplar yükleniyor...</Text>
       </View>
     );
   }
+
 
   if (!currentBook) {
     return (
@@ -255,6 +289,25 @@ export default function SwipeScreen({ navigation }) {
               <Text style={styles.modalAuthor}>Yazar: {currentBook.author}</Text>
               <Text style={styles.modalDescription}>{bookDescription}</Text>
             </ScrollView>
+            <TouchableOpacity
+              style={styles.detailButton}
+              onPress={() => {
+                setModalVisible(false); // önce modalı kapat
+                const safeBook = {
+                  ...currentBook,
+                  createdAt: currentBook.createdAt
+                    ? (currentBook.createdAt.toDate ? currentBook.createdAt.toDate().toISOString() : currentBook.createdAt.toISOString())
+                    : null,
+                  // eğer başka tarih alanları varsa onları da buraya ekle
+                };
+
+                navigation.navigate('DetailScreen', { book: safeBook });
+
+              }}
+            >
+              <Text style={styles.detailButtonText}>Yorumlar & Alıntılar</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       </Modal>
@@ -281,14 +334,14 @@ export default function SwipeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: 40,
-    paddingBottom: 120,
+    paddingTop: SCREEN_HEIGHT * 0.05, // %5 üst boşluk
+    paddingBottom: SCREEN_HEIGHT * 0.15, // %15 alt boşluk (butonlar için)
     position: 'relative',
   },
   loadingContainer: {
@@ -299,7 +352,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.025, // %2.5 alt boşluk
   },
   logo: {
     width: 150,
@@ -307,23 +360,26 @@ const styles = StyleSheet.create({
   },
   bookInfo: {
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02, // %2 alt boşluk
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   bookTitle: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: SCREEN_WIDTH * 0.08,  // daha büyük
+    maxWidth: SCREEN_WIDTH * 0.75,
+    fontWeight: '700',
     textAlign: 'center',
-    maxWidth: 280,
   },
   author: {
-    fontSize: 16,
+    fontSize: 18,
     color: 'gray',
     textAlign: 'center',
+    marginTop: 4,
   },
+
   cardContainer: {
-    width: '80%',
-    height: 420,
-    marginBottom: 20,
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_HEIGHT * 0.55,
+    marginBottom: SCREEN_HEIGHT * 0.025,
   },
   card: {
     flex: 1,
@@ -338,8 +394,8 @@ const styles = StyleSheet.create({
   },
   reportButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: SCREEN_HEIGHT * 0.02,
+    right: SCREEN_WIDTH * 0.02,
     zIndex: 20,
   },
   swipeButtons: {
@@ -347,8 +403,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '80%',
+    justifyContent: 'center',  // ortaya hizala
+    width: '60%',               // genişliği biraz azalt
     alignSelf: 'center',
     backgroundColor: 'transparent',
     zIndex: 10,
@@ -362,53 +418,69 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    marginHorizontal: 10, // butonlar arasına boşluk
   },
+
   learnMore: {
     position: 'absolute',
-    bottom: 30,
+    bottom: SCREEN_HEIGHT * 0.04,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'red',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
     borderRadius: 20,
     zIndex: 10,
   },
   learnMoreText: {
     color: '#fff',
-    marginRight: 8,
+    marginRight: SCREEN_WIDTH * 0.02,
     fontWeight: 'bold',
+    fontSize: normalize(18),
   },
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
     width: '100%',
-    maxHeight: '80%',
-    padding: 20,
+    maxHeight: SCREEN_HEIGHT * 0.8,
+    padding: SCREEN_WIDTH * 0.05,
   },
   modalCloseButton: {
     alignSelf: 'flex-end',
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: normalize(25),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: SCREEN_HEIGHT * 0.015,
   },
   modalAuthor: {
-    fontSize: 16,
+    fontSize: normalize(20),
     color: 'gray',
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   modalDescription: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: normalize(20),
+    lineHeight: normalize(25),
+  },
+  detailButton: {
+    marginTop: SCREEN_HEIGHT * 0.02,
+    backgroundColor: 'red',
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  detailButtonText: {
+    color: '#fff',
+    fontSize: normalize(16),
+    fontWeight: '600',
   },
 });

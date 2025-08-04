@@ -8,10 +8,11 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useNavigation } from '@react-navigation/native';
 
@@ -24,23 +25,54 @@ export default function ProfileScreen() {
   const [messageText, setMessageText] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [username, setUsername] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState(null);
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [tempSelectedAvatarIndex, setTempSelectedAvatarIndex] = useState(null);
+
+  const avatarOptions = [
+    require('../../assets/avatars/avatar1.png'),
+    require('../../assets/avatars/avatar2.png'),
+    require('../../assets/avatars/avatar3.png'),
+    require('../../assets/avatars/avatar4.png'),
+  ];
 
   const auth = getAuth();
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchUsername = async () => {
+    const fetchUserData = async () => {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setUsername(data.username || '');
+
+          if (typeof data.avatarIndex === 'number' && avatarOptions[data.avatarIndex]) {
+            setSelectedAvatar(avatarOptions[data.avatarIndex]);
+            setSelectedAvatarIndex(data.avatarIndex);
+          }
         }
       }
     };
-    fetchUsername();
+    fetchUserData();
   }, [user]);
+
+  const saveAvatarToFirestore = async (index) => {
+    if (!user) return;
+
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid),
+        { avatarIndex: index },
+        { merge: true }
+      );
+      showMessage('Profil resmi başarıyla güncellendi.', 'success');
+    } catch (error) {
+      showMessage('Profil resmi güncellenirken hata oluştu: ' + error.message, 'error');
+    }
+  };
 
   const handleSendResetEmail = async () => {
     if (!user?.email) {
@@ -65,7 +97,8 @@ export default function ProfileScreen() {
     setMessageModalVisible(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('rememberedUser');
     auth.signOut()
       .then(() => {
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -76,28 +109,40 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.profileHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {(username && username.charAt(0).toUpperCase()) ||
-              (user?.email && user.email.charAt(0).toUpperCase()) ||
-              'U'}
-          </Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <Text style={styles.header}>Profil</Text>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => {
+            setIsAvatarModalVisible(true);
+            setTempSelectedAvatarIndex(selectedAvatarIndex);
+          }}
+          activeOpacity={0.7}
+        >
+          {selectedAvatar ? (
+            <Image source={selectedAvatar} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(username && username.charAt(0).toUpperCase()) ||
+                  (user?.email && user.email.charAt(0).toUpperCase()) ||
+                  'U'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.avatarHintText}>Profil resmine dokunarak değiştirebilirsiniz</Text>
+        </TouchableOpacity>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.infoText}>E-posta: {user?.email || 'Bulunamadı'}</Text>
+          <Text style={styles.infoText}>Kullanıcı Adı: {username || 'Bulunamadı'}</Text>
+          <Text style={styles.infoText}>Üyelik Tipi: Standart</Text>
         </View>
-        <Text style={styles.username}>
-          Merhaba {username || user?.email || 'Kullanıcı Bulunamadı'}!
-        </Text>
-      </View>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Hesap Bilgileri</Text>
-        <Text style={styles.infoText}>Email: {user?.email || 'Bulunamadı'}</Text>
-        <Text style={styles.infoText}>Kullanıcı Adı: {username || 'Bulunamadı'}</Text>
-        <Text style={styles.infoText}>Üyelik Tipi: Standart</Text>
-      </View>
-
-      <View style={styles.optionsSection}>
         <TouchableOpacity style={styles.optionButton} onPress={() => setModalVisible(true)}>
           <Text style={styles.optionText}>Şifre Değiştir</Text>
         </TouchableOpacity>
@@ -113,15 +158,19 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('HelpSupport')}>
           <Text style={styles.optionText}>Yardım & Destek</Text>
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity style={[styles.optionButton, styles.logoutButton]} onPress={handleLogout}>
-        <Text style={[styles.optionText, { color: 'red', textAlign: 'center' }]}>Çıkış Yap</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('KitapEkle')}>
+          <Text style={styles.optionText}>Kitap Önerisi Gönder</Text>
+        </TouchableOpacity>
 
-      <View style={styles.footer}>
-        <Text style={styles.versionText}>Uygulama Versiyonu 1.0.0</Text>
-      </View>
+        <TouchableOpacity style={[styles.optionButton, styles.logoutButton]} onPress={handleLogout}>
+          <Text style={[styles.optionText, { color: 'red', textAlign: 'center' }]}>Çıkış Yap</Text>
+        </TouchableOpacity>
+        <View>
+          <Text style={[styles.optionText, { color: 'black', textAlign: 'center', fontSize: SCREEN_WIDTH * 0.045, }]}>Versiyon: 1.0.1</Text>
+        </View>
+
+      </ScrollView>
 
       {/* Şifre Sıfırlama Modalı */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => !loading && setModalVisible(false)}>
@@ -144,7 +193,7 @@ export default function ProfileScreen() {
             {loading ? (
               <ActivityIndicator size="large" color="#f44336" style={{ marginTop: 15 }} />
             ) : (
-              <TouchableOpacity style={styles.sendButton} onPress={handleSendResetEmail}>
+              <TouchableOpacity style={styles.resetButton} onPress={handleSendResetEmail} activeOpacity={0.7}>
                 <Text style={styles.sendButtonText}>Gönder</Text>
               </TouchableOpacity>
             )}
@@ -178,130 +227,190 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+
+      {/* Avatar Seçim Modalı */}
+      <Modal
+        visible={isAvatarModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsAvatarModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Profil Resmini Seç</Text>
+            <Text style={styles.modalDescription}>
+              Profil resminizi değiştirmek için aşağıdan bir avatar seçin ve "Kaydet"e dokunun.
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.avatarOptionsScroll}
+              contentContainerStyle={{ paddingHorizontal: 10 }}
+            >
+              {avatarOptions.map((img, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setTempSelectedAvatarIndex(index)}
+                  style={[
+                    styles.avatarOption,
+                    tempSelectedAvatarIndex === index && styles.avatarSelected,
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Image source={img} style={styles.avatarImageSmall} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                onPress={() => setIsAvatarModalVisible(false)}
+                style={[styles.sendButton, styles.cancelButton]}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.sendButtonText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (tempSelectedAvatarIndex !== null) {
+                    setSelectedAvatar(avatarOptions[tempSelectedAvatarIndex]);
+                    setSelectedAvatarIndex(tempSelectedAvatarIndex);
+                    setIsAvatarModalVisible(false);
+                    await saveAvatarToFirestore(tempSelectedAvatarIndex);
+                  }
+                }}
+                disabled={tempSelectedAvatarIndex === null}
+                style={[
+                  styles.sendButton,
+                  { opacity: tempSelectedAvatarIndex !== null ? 1 : 0.6 },
+                ]}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.sendButtonText}>Kaydet</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 40,         // sabit padding top
+    paddingHorizontal: 18,  // sabit yatay padding
+    //width: 360,             // sabit genişlik
+    //alignSelf: 'center',    // ortalama
+  },
+  header: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#222',
   },
   scrollContent: {
-    paddingTop: SCREEN_HEIGHT * 0.09,
-    paddingHorizontal: SCREEN_WIDTH * 0.05,
-    paddingBottom: SCREEN_HEIGHT * 0.06,
+    paddingBottom: 24,
   },
-  profileHeader: {
-    flexDirection: 'row',
+  avatarContainer: {
     alignItems: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.06,
+    marginBottom: 32,
   },
   avatar: {
     backgroundColor: '#f44336',
-    width: SCREEN_WIDTH * 0.18,
-    height: SCREEN_WIDTH * 0.18,
-    borderRadius: (SCREEN_WIDTH * 0.18) / 2,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SCREEN_WIDTH * 0.05,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   avatarText: {
     color: '#fff',
-    fontSize: SCREEN_WIDTH * 0.1,
+    fontSize: 40,
     fontWeight: 'bold',
   },
-  username: {
-    fontSize: SCREEN_WIDTH * 0.07,
-    fontWeight: '700',
-    color: '#333',
-    flexShrink: 1,
+  avatarHintText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
   },
   infoSection: {
-    marginBottom: SCREEN_HEIGHT * 0.045,
-  },
-  sectionTitle: {
-    fontSize: SCREEN_WIDTH * 0.06,
-    fontWeight: 'bold',
-    marginBottom: SCREEN_HEIGHT * 0.02,
-    color: '#222',
+    marginBottom: 32,
   },
   infoText: {
-    fontSize: SCREEN_WIDTH * 0.045,
-    marginBottom: SCREEN_HEIGHT * 0.01,
-    color: '#555',
-  },
-  optionsSection: {
-    marginBottom: SCREEN_HEIGHT * 0.035,
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 8,
   },
   optionButton: {
-    paddingVertical: SCREEN_HEIGHT * 0.018,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    paddingVertical: 14,
   },
   optionText: {
-    fontSize: SCREEN_WIDTH * 0.05,
+    fontSize: 18,
     color: '#444',
   },
   logoutButton: {
     borderBottomWidth: 0,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: SCREEN_HEIGHT * 0.04,
-  },
-  versionText: {
-    color: 'gray',
-    fontSize: SCREEN_WIDTH * 0.04,
+    marginTop: 16,
   },
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingHorizontal: 18,
   },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: SCREEN_WIDTH * 0.05,
+    padding: 18,
     elevation: 5,
   },
   modalCloseButton: {
     alignSelf: 'flex-end',
-    padding: SCREEN_WIDTH * 0.01,
   },
   modalTitle: {
-    fontSize: SCREEN_WIDTH * 0.06,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: SCREEN_HEIGHT * 0.015,
+    marginBottom: 12,
     color: '#222',
   },
   modalDescription: {
-    fontSize: SCREEN_WIDTH * 0.045,
+    fontSize: 16,
     color: '#555',
-    marginBottom: SCREEN_HEIGHT * 0.025,
+    marginBottom: 20,
   },
-  sendButton: {
-    marginTop: SCREEN_HEIGHT * 0.02,
+  resetButton: {
     backgroundColor: '#f44336',
-    paddingVertical: SCREEN_HEIGHT * 0.018,
+    paddingVertical: 14,
     borderRadius: 25,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: SCREEN_WIDTH * 0.05,
+    fontSize: 18,
   },
   messageModalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SCREEN_WIDTH * 0.1,
+    paddingHorizontal: 36,
   },
   messageModalContainer: {
-    padding: SCREEN_WIDTH * 0.06,
+    padding: 24,
     borderRadius: 15,
     width: '100%',
     alignItems: 'center',
@@ -314,20 +423,53 @@ const styles = StyleSheet.create({
   },
   messageModalText: {
     color: '#fff',
-    fontSize: SCREEN_WIDTH * 0.05,
+    fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.02,
+    marginBottom: 16,
   },
   messageModalButton: {
     backgroundColor: '#fff',
-    paddingVertical: SCREEN_HEIGHT * 0.015,
-    paddingHorizontal: SCREEN_WIDTH * 0.08,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
     borderRadius: 20,
   },
   messageModalButtonText: {
     color: '#333',
     fontWeight: 'bold',
-    fontSize: SCREEN_WIDTH * 0.045,
+    fontSize: 16,
+  },
+  avatarOptionsScroll: {
+    marginVertical: 16,
+  },
+  avatarOption: {
+    marginHorizontal: 9,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    padding: 3,
+  },
+  avatarSelected: {
+    borderColor: '#f44336',
+  },
+  avatarImageSmall: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    backgroundColor: '#999',
+  },
+  sendButton: {
+    backgroundColor: '#f44336',
+    paddingVertical: 14,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '48%',
   },
 });

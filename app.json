@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "SwipeIt",
+    "name": "Swipe It",
     "slug": "SwipeBooksMoviesApp",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/logo_dikey.png",
+    "icon": "./assets/logo_first.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo_dikey.png",
+      "image": "./assets/logo_first.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,19 +17,35 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo_dikey.png",
+        "foregroundImage": "./assets/logo_first.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.busrwa.SwipeBooksMoviesApp"
+      "package": "com.busrwa.SwipeBooksMoviesApp",
+      "versionCode": 2,
+      "manifest": {
+        "queries": [
+          {
+            "intent": {
+              "action": "android.intent.action.SENDTO",
+              "data": {
+                "scheme": "mailto"
+              }
+            }
+          }
+        ]
+      }
     },
     "web": {
-      "favicon": "./assets/logo_dikey.png"
+      "favicon": "./assets/logo_first.png"
     },
     "extra": {
       "eas": {
         "projectId": "f1f45d7b-3bc7-46c3-96a2-4a38e4f8c633"
       }
-    }
+    },
+    "plugins": [
+      "expo-mail-composer"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,34 @@ import {
   Platform,
   ScrollView,
   Modal,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../services/firebase';
+
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
+
+  useEffect(() => {
+    const checkRememberedUser = async () => {
+      const savedEmail = await AsyncStorage.getItem('rememberedUser');
+      if (savedEmail) {
+        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      }
+    };
+    checkRememberedUser();
+  }, []);
 
   const showPopup = (title, message) => {
     setModalTitle(title);
@@ -31,35 +47,44 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      showPopup('Eksik Bilgi', 'Lütfen email ve şifre alanlarını doldurun.');
+      showPopup('Eksik Bilgi', 'Lütfen e-posta ve şifre alanlarını doldurun.');
       return;
     }
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } catch (error) {
-      let message = 'Bilinmeyen bir hata oluştu. Lütfen email ve şifrenizi kontrol edip, tekrar deneyin.';
-      if (error.code === 'auth/invalid-email') {
-        message = 'Geçersiz email adresi.';
-      } else if (error.code === 'auth/user-not-found') {
-        message = 'Kullanıcı bulunamadı.';
-      } else if (error.code === 'auth/wrong-password') {
-        message = 'Şifre yanlış.';
+      if (rememberMe) {
+        await AsyncStorage.setItem('rememberedUser', email);
       }
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+    } catch (error) {
+      let message = 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.';
+      if (error.code === 'auth/invalid-email') message = 'Geçersiz e-posta adresi.';
+      else if (error.code === 'auth/user-not-found') message = 'Kullanıcı bulunamadı.';
+      else if (error.code === 'auth/wrong-password') message = 'Şifre yanlış.';
       showPopup('Giriş Hatası', message);
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showPopup('E-posta Gerekli', 'Şifre sıfırlama için lütfen e-posta adresinizi girin.');
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showPopup('E-posta Gönderildi', 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+    } catch (error) {
+      showPopup('Hata', 'Şifre sıfırlama sırasında bir hata oluştu.');
+    }
+  };
+
   return (
-    <View style={styles.outerContainer}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoiding}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
@@ -67,13 +92,16 @@ export default function LoginScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.innerContainer}>
-            <Image source={require('../../assets/swipeitlogo.png')} style={styles.logo} />
-
+            <Image
+              source={require('../../assets/swipeitlogo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Giriş Yap</Text>
 
             <TextInput
               style={[styles.input, { color: 'black' }]}
-              placeholder="Email"
+              placeholder="E-posta"
               placeholderTextColor="#888"
               value={email}
               onChangeText={setEmail}
@@ -90,11 +118,23 @@ export default function LoginScreen({ navigation }) {
                 value={password}
                 onChangeText={setPassword}
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                 <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.forgotRememberContainer}>
+              <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPasswordTouchable}>
+                <Text style={styles.forgotPassword}>Şifremi Unuttum?</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setRememberMe(!rememberMe)}
+                style={styles.rememberMeContainer}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.customCheckbox, rememberMe && styles.customCheckboxChecked]} />
+                <Text style={styles.rememberText}>Beni Hatırla</Text>
               </TouchableOpacity>
             </View>
 
@@ -109,18 +149,12 @@ export default function LoginScreen({ navigation }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal Popup */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
+      {/* Modal */}
+      <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{modalTitle}</Text>
             <Text style={styles.modalMessage}>{modalMessage}</Text>
-
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => setModalVisible(false)}
@@ -131,12 +165,12 @@ export default function LoginScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#fff',
   },
@@ -145,24 +179,23 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   innerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingVertical: 40,
+    alignItems: 'center',
   },
   logo: {
-    width: 200,
-    height: 60,
-    marginBottom: 30,
+    width: width * 0.6, // ekran genişliğinin yarısı kadar
+    height: 150,
+    marginBottom: 5,
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 30,
+    textAlign: 'center',
   },
   input: {
     width: '100%',
@@ -171,30 +204,66 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 15,
-    marginBottom: 20,
+    marginBottom: 12,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
   },
   passwordContainer: {
     width: '100%',
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   passwordInput: {
-    paddingRight: 45, // Göz simgesi için boşluk
+    paddingRight: 45,
   },
   eyeIcon: {
     position: 'absolute',
     right: 15,
-    top: 15,
+    top: Platform.OS === 'ios' ? 15 : 15,
+  },
+  forgotRememberContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  forgotPasswordTouchable: {
+    paddingVertical: 5,
+  },
+  forgotPassword: {
+    color: '#E63946',
+    textDecorationLine: 'underline',
+    fontSize: 14,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  customCheckbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: '#E63946',
+    borderRadius: 6,
+    marginRight: 10,
+    backgroundColor: 'transparent',
+  },
+  customCheckboxChecked: {
+    backgroundColor: '#E63946',
+  },
+  rememberText: {
+    fontSize: 14,
+    color: '#444',
+    fontWeight: '600',
   },
   button: {
-    backgroundColor: 'red',
+    backgroundColor: '#E63946',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 20,
-    marginTop: 10,
     marginBottom: 20,
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
@@ -205,6 +274,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: 'gray',
     fontSize: 14,
+    textDecorationLine: 'underline',
   },
   modalOverlay: {
     flex: 1,
@@ -234,7 +304,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#E63946',
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 25,
