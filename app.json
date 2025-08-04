@@ -32,6 +32,14 @@
                 "scheme": "mailto"
               }
             }
+          },
+          {
+            "intent": {
+              "action": "android.intent.action.SENDTO",
+              "data": {
+                "scheme": "mailto"
+              }
+            }
           }
         ]
       }
@@ -46,6 +54,12 @@
     },
     "plugins": [
       "expo-mail-composer"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f1f45d7b-3bc7-46c3-96a2-4a38e4f8c633"
+    }
   }
 }

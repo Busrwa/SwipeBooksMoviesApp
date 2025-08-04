@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     fontSize: SCREEN_WIDTH * 0.042,
-    color: '#333',
+    color: '#000000ff',
     maxHeight: 100,
   },
   addButton: {
