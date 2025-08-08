@@ -364,7 +364,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   bookTitle: {
-    fontSize: SCREEN_WIDTH * 0.08,  // daha büyük
+    fontSize: SCREEN_WIDTH * 0.05,  // daha büyük
     maxWidth: SCREEN_WIDTH * 0.75,
     fontWeight: '700',
     textAlign: 'center',

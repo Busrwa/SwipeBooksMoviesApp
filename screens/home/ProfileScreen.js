@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,16 @@ import {
   ScrollView,
   Dimensions,
   Image,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useNavigation } from '@react-navigation/native';
+
+import { ThemeContext } from '../../context/ThemeContext';
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -32,6 +36,10 @@ export default function ProfileScreen() {
   const [selectedAvatarIndex, setSelectedAvatarIndex] = useState(null);
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [tempSelectedAvatarIndex, setTempSelectedAvatarIndex] = useState(null);
+
+  //Dark mode buton
+  const [darkMode, setDarkMode] = useState(false);
+
 
   const avatarOptions = [
     require('../../assets/avatars/avatar1.png'),
@@ -146,6 +154,27 @@ export default function ProfileScreen() {
           <Text style={styles.infoText}>Üyelik Tipi: Standart</Text>
         </View>
 
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => {
+            setDarkMode(!darkMode);
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={styles.toggleRow}>
+            <Text style={[styles.optionText, darkMode ? styles.textDark : styles.textLight]}>
+              Karanlık Mod
+            </Text>
+            <Switch
+              trackColor={{ false: "#ccc", true: "#f44336" }}
+              thumbColor={darkMode ? "#b71c1c" : "#fff"}
+              ios_backgroundColor="#555"
+              onValueChange={setDarkMode}
+              value={darkMode}
+            />
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.optionButton} onPress={() => setModalVisible(true)}>
           <Text style={styles.optionText}>Şifre Değiştir</Text>
         </TouchableOpacity>
@@ -176,9 +205,8 @@ export default function ProfileScreen() {
 
 
         <View>
-          <Text style={[styles.optionText, { color: '#444', textAlign: 'center', fontSize: SCREEN_WIDTH * 0.035, paddingTop:20, }]}>Versiyon: 1.0.2</Text>
+          <Text style={[styles.optionText, { color: '#444', textAlign: 'center', fontSize: SCREEN_WIDTH * 0.035, paddingTop: 20, }]}>Versiyon: 1.0.2</Text>
         </View>
-
       </ScrollView>
 
       {/* Şifre Sıfırlama Modalı */}
@@ -361,7 +389,7 @@ const styles = StyleSheet.create({
   optionButton: {
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   optionText: {
     fontSize: 18,
@@ -491,5 +519,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '48%',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 20, // veya uygun gördüğün sabit yükseklik
+
   },
 });
