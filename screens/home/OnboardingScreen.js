@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import Swiper from 'react-native-swiper';
 import LottieView from 'lottie-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -44,7 +46,44 @@ const slides = [
 export default function OnboardingScreen({ navigation }) {
   const swiperRef = useRef(null);
 
-  const handleDone = () => {
+  const [loading, setLoading] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined: henüz belli değil
+
+  useEffect(() => {
+    const checkData = async () => {
+      const seen = await AsyncStorage.getItem('hasSeenOnboarding');
+      setHasSeenOnboarding(seen === 'true');
+    };
+
+    checkData();
+
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Kullanıcı bilgisi ve onboarding bilgisi hazırsa işleme devam et
+    if (hasSeenOnboarding !== null && user !== undefined) {
+      if (hasSeenOnboarding && user) {
+        // Kullanıcı girişli ve onboarding görülmüş: direkt main'e
+        navigation.replace('Main'); // Ana sayfa rotası buraya
+      } else if (hasSeenOnboarding && !user) {
+        // Onboarding görülmüş ama giriş yapılmamış: login ekranı
+        navigation.replace('Login');
+      } else {
+        // Onboarding gösterilecek
+        setLoading(false);
+      }
+    }
+  }, [hasSeenOnboarding, user]);
+
+  const handleDone = async () => {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
     navigation.replace('Login');
   };
 
@@ -56,6 +95,25 @@ export default function OnboardingScreen({ navigation }) {
     swiperRef.current?.scrollBy(-1);
   };
 
+  if (loading) {
+    // Yalnızca loading animasyonu göster, başka UI yok
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.loadingContainer}>
+          <LottieView
+            source={require('../../assets/loading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+          <Text style={styles.loadingText}>Yükleniyor...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // loading false ise onboarding göster
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -95,7 +153,6 @@ export default function OnboardingScreen({ navigation }) {
                   <Text style={styles.title}>{slide.title}</Text>
                   <Text style={styles.subtitle}>{slide.subtitle}</Text>
 
-                  {/* Başla Butonu */}
                   {index === slides.length - 1 && (
                     <TouchableOpacity style={styles.startButton} onPress={handleDone}>
                       <Text style={styles.startButtonText}>Başla</Text>
@@ -210,5 +267,19 @@ const styles = StyleSheet.create({
   },
   pagination: {
     bottom: 110,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingAnimation: {
+    width: width * 0.5,
+    height: width * 0.5,
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: '#555',
   },
 });

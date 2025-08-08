@@ -1,4 +1,4 @@
-import React from 'react'; 
+import React from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Linking,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function TermsOfUseScreen() {
   const navigation = useNavigation();
@@ -21,14 +24,20 @@ export default function TermsOfUseScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={SCREEN_WIDTH * 0.07} color="#333" />
           </TouchableOpacity>
           <Text style={styles.header}>Kullanım Koşulları</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        {/* Scroll İçerik */}
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.sectionTitle}>1. Tanımlar</Text>
           <Text style={styles.text}>
             İşbu Kullanım Koşulları metninde;
@@ -46,7 +55,7 @@ export default function TermsOfUseScreen() {
 
           <Text style={styles.sectionTitle}>3. Hizmet Tanımı</Text>
           <Text style={styles.text}>
-            SwipeIt, kullanıcıların kitap ve film içeriklerini görüntülemesine, favorilere eklemesine, değerlendirmesine ve kişisel koleksiyonlarını yönetmesine imkan tanır.
+            SwipeIt, kullanıcıların kitap içeriklerini görüntülemesine, favorilere eklemesine, değerlendirmesine ve kişisel koleksiyonlarını yönetmesine imkan tanır.
             Hizmet kapsamında sunulan içerik ve işlevler önceden haber verilmeksizin değiştirilebilir veya sonlandırılabilir.
           </Text>
 
@@ -106,7 +115,7 @@ export default function TermsOfUseScreen() {
 
           <Text style={styles.sectionTitle}>12. İletişim</Text>
           <Text style={styles.text}>
-            İşbu koşullar, hizmetlerimiz veya kişisel verilerinizle ilgili sorularınız için aşağıdaki e-posta adresinden bizimle iletişime geçebilirsiniz:{' '}
+            İşbu koşullar, hizmetlerimiz veya kişisel verilerinizle ilgili sorularınız için aşağıdaki e-posta adresinden bizimle iletişime geçebilirsiniz:{'\n'}
             <Text style={styles.emailLink} onPress={handleEmailPress}>
               info.swipeitofficial@gmail.com
             </Text>
@@ -117,47 +126,46 @@ export default function TermsOfUseScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,       // Sabit üst boşluk
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,  // Sabit yandan boşluk
-    width: 360,             // Sabit genişlik, ortalamak için container dışına sarmak gerekebilir
-    alignSelf: 'center',    // Ortalamak için
+    paddingTop: SCREEN_HEIGHT * 0.06,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    width: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,       // Sabit margin
+    //marginBottom: SCREEN_HEIGHT * 0.03,
   },
   backButton: {
-    marginRight: 12,
-    padding: 6,
+    marginRight: SCREEN_WIDTH * 0.03,
+    padding: SCREEN_WIDTH * 0.02,
   },
   header: {
-    fontSize: 26,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: '700',
     color: '#222',
-    lineHeight: 32,
+    lineHeight: SCREEN_WIDTH * 0.08,
+    flexShrink: 1,
   },
-  content: {
-    paddingBottom: 40,
+  contentContainer: {
+    paddingBottom: SCREEN_HEIGHT * 0.04,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: SCREEN_WIDTH * 0.042,
     fontWeight: '700',
     color: '#222',
-    marginTop: 28,
-    marginBottom: 12,
+    marginTop: SCREEN_HEIGHT * 0.035,
+    marginBottom: SCREEN_HEIGHT * 0.015,
   },
   text: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: SCREEN_WIDTH * 0.035,
+    lineHeight: SCREEN_WIDTH * 0.06,
     color: '#444',
   },
   emailLink: {

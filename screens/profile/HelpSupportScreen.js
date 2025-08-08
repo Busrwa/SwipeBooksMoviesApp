@@ -8,10 +8,13 @@ import {
   Linking,
   SafeAreaView,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function HelpSupportScreen() {
   const navigation = useNavigation();
@@ -42,10 +45,10 @@ export default function HelpSupportScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.headerContainer}>
+        <View style={[styles.headerContainer]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
@@ -79,6 +82,56 @@ export default function HelpSupportScreen() {
             <Text style={styles.question}>• Uygulamada bir hata buldum, nasıl bildirebilirim?</Text>
             <Text style={styles.answer}>Aşağıdaki "Sorun Bildir" seçeneğinden bize ulaşabilirsiniz.</Text>
           </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Kitaplar nasıl öneriliyor?</Text>
+            <Text style={styles.answer}>
+              Kullanıcıların beğenilerine ve favorilerine göre algoritma yeni kitaplar ve yazarlar önerir.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Kütüphanem nasıl senkronize ediliyor?</Text>
+            <Text style={styles.answer}>
+              Kalp butonuna tıklayarak eklediğiniz favori kitaplarınız hesabınıza bağlı olarak bulutta saklanır ve farklı cihazlarda otomatik senkronize edilir.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Okuma listemi yani Kütüphanemi nasıl yönetebilirim?</Text>
+            <Text style={styles.answer}>
+              Okuma listenize kitap ekleyebilir, çıkarabilir veya sıralamasını değiştirebilirsiniz. Bu liste sizin özel listenizdir.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Kitap detaylarında beğeni, yorumlar ve alıntılar nasıl çalışıyor?</Text>
+            <Text style={styles.answer}>
+              Beğeniler kullanıcıların kitaba verdikleri olumlu oyları gösterir. Yorumlar ve alıntılar ise diğer kullanıcıların paylaşımlarını içerir.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Yeni kitap ve yazarlar nasıl keşfedebilirim?</Text>
+            <Text style={styles.answer}>
+              Ana sayfadaki kaydırma ile algoritmanın size özel hazırladığı farklı türlerde kitapları ve yazarları keşfedebilirsiniz.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Uygulama güncellemeleri nasıl yapılır?</Text>
+            <Text style={styles.answer}>
+              Uygulama mağazanızdan güncellemeleri kontrol edebilir ve son sürümü indirerek kullanmaya devam edebilirsiniz.
+            </Text>
+          </View>
+
+          <View style={styles.faqBlock}>
+            <Text style={styles.question}>• Uygulama verilerim güvende mi?</Text>
+            <Text style={styles.answer}>
+              Kişisel verileriniz KVKK ve Gizlilik Politikası doğrultusunda güvenle saklanır.
+            </Text>
+          </View>
+
 
           {/* İletişim */}
           <Text style={styles.sectionTitle}>İletişim</Text>
@@ -140,53 +193,60 @@ export default function HelpSupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    width: 360,
-    alignSelf: 'center',
+    paddingTop: SCREEN_HEIGHT * 0.06,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    width: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
   },
   backButton: {
-    marginRight: 12,
-    padding: 6,
+    marginRight: SCREEN_WIDTH * 0.03,
+    padding: SCREEN_WIDTH * 0.02,
   },
   header: {
-    fontSize: 24,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: '700',
     color: '#222',
+    lineHeight: SCREEN_WIDTH * 0.08,
+    flexShrink: 1,
   },
   content: {
-    paddingBottom: 20,
+    paddingBottom: SCREEN_HEIGHT * 0.04,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontWeight: '700',
     color: '#222',
-    marginVertical: 16,
+    marginTop: SCREEN_HEIGHT * 0.035,
+    marginBottom: SCREEN_HEIGHT * 0.015,
   },
   faqBlock: {
     marginBottom: 16,
   },
   question: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.035,
     fontWeight: '700',
     color: '#444',
+    marginTop: SCREEN_HEIGHT * 0.015,
+    marginBottom: SCREEN_HEIGHT * 0.005,
   },
   answer: {
-    fontSize: 15,
+    fontSize: SCREEN_WIDTH * 0.035,
     color: '#555',
     marginTop: 6,
   },
   text: {
-    fontSize: 15,
+    fontSize: SCREEN_WIDTH * 0.042,
+    lineHeight: SCREEN_WIDTH * 0.06,
     color: '#444',
-    marginBottom: 14,
   },
   emailLink: {
     fontSize: 16,

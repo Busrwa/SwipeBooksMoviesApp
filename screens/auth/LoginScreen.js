@@ -30,14 +30,16 @@ export default function LoginScreen({ navigation }) {
   const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
-    const checkRememberedUser = async () => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const savedEmail = await AsyncStorage.getItem('rememberedUser');
-      if (savedEmail) {
+      if (user && savedEmail) {
         navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       }
-    };
-    checkRememberedUser();
+    });
+
+    return () => unsubscribe(); // component unmount olduğunda temizle
   }, []);
+
 
   const showPopup = (title, message) => {
     setModalTitle(title);
@@ -53,9 +55,14 @@ export default function LoginScreen({ navigation }) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+
+      // Beni hatırla seçiliyse email kaydet, değilse sil
       if (rememberMe) {
         await AsyncStorage.setItem('rememberedUser', email);
+      } else {
+        await AsyncStorage.removeItem('rememberedUser');
       }
+
       navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (error) {
       let message = 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.';
@@ -65,6 +72,7 @@ export default function LoginScreen({ navigation }) {
       showPopup('Giriş Hatası', message);
     }
   };
+
 
   const handleForgotPassword = async () => {
     if (!email) {

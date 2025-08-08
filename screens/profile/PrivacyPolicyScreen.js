@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Linking,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function PrivacyPolicyScreen() {
   const navigation = useNavigation();
@@ -21,14 +24,20 @@ export default function PrivacyPolicyScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={SCREEN_WIDTH * 0.07} color="#333" />
           </TouchableOpacity>
           <Text style={styles.header}>Gizlilik Politikası</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        {/* Scroll İçerik */}
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.sectionTitle}>1. Giriş</Text>
           <Text style={styles.text}>
             Bu gizlilik politikası, SwipeIt uygulaması aracılığıyla toplanan bilgilerin
@@ -87,7 +96,7 @@ export default function PrivacyPolicyScreen() {
 
           <Text style={styles.sectionTitle}>9. İletişim</Text>
           <Text style={styles.text}>
-            Sorularınız ve talepleriniz için:{' '}
+            Sorularınız ve talepleriniz için:{'\n'}
             <Text style={styles.emailLink} onPress={handleEmailPress}>
               info.swipeitofficial@gmail.com
             </Text>
@@ -102,42 +111,42 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,      // sabit üst boşluk
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    width: 360,          // Sabit genişlik tüm cihazlarda aynı görünüm için
-    alignSelf: 'center', // ortalamak için
+    paddingTop: SCREEN_HEIGHT * 0.06,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    width: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,    // sabit margin
+    //marginBottom: SCREEN_HEIGHT * 0.03,
   },
   backButton: {
-    marginRight: 12,
-    padding: 6,
+    marginRight: SCREEN_WIDTH * 0.03,
+    padding: SCREEN_WIDTH * 0.02,
   },
   header: {
-    fontSize: 26,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: '700',
     color: '#222',
-    lineHeight: 32,
+    lineHeight: SCREEN_WIDTH * 0.08,
+    flexShrink: 1,
   },
-  content: {
-    paddingBottom: 40,
+  contentContainer: {
+    paddingBottom: SCREEN_HEIGHT * 0.04,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: SCREEN_WIDTH * 0.042,
     fontWeight: '700',
     color: '#222',
-    marginTop: 28,
-    marginBottom: 12,
+    marginTop: SCREEN_HEIGHT * 0.035,
+    marginBottom: SCREEN_HEIGHT * 0.015,
   },
   text: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: SCREEN_WIDTH * 0.035,
+    lineHeight: SCREEN_WIDTH * 0.06,
     color: '#444',
   },
   emailLink: {

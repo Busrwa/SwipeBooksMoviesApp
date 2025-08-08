@@ -60,7 +60,10 @@ export default function RegisterScreen() {
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const usernameRegex = /^[a-zA-Z0-9]+$/; // sadece harf ve rakam
-    const passwordRegex = /^[a-zA-Z0-9]+$/; // sadece harf ve rakam
+    // const passwordRegex = /^[a-zA-Z0-9]+$/; // sadece harf ve rakam
+
+    const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]+$/;
+
 
     if (!username.trim()) {
       showModal('Hata', 'Kullanıcı adı boş bırakılamaz.');
@@ -94,8 +97,9 @@ export default function RegisterScreen() {
       showModal('Hata', 'Şifre tekrar boş bırakılamaz.');
       return false;
     }
-    if (!passwordRegex.test(password)) {
-      showModal('Hata', 'Şifre sadece harf ve rakamlardan oluşmalıdır. Özel karakter içeremez.');
+    if (!passwordComplexityRegex.test(password)) {
+      showModal('Hata', 'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir. Özel karakter kullanmayınız.'
+      );
       return false;
     }
 

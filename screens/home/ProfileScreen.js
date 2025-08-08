@@ -166,11 +166,17 @@ export default function ProfileScreen() {
           <Text style={styles.optionText}>Kitap Önerisi Gönder</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.optionButton, styles.logoutButton]} onPress={handleLogout}>
-          <Text style={[styles.optionText, { color: 'red', textAlign: 'center' }]}>Çıkış Yap</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
         </TouchableOpacity>
+
+
         <View>
-          <Text style={[styles.optionText, { color: 'black', textAlign: 'center', fontSize: SCREEN_WIDTH * 0.045, }]}>Versiyon: 1.0.1</Text>
+          <Text style={[styles.optionText, { color: '#444', textAlign: 'center', fontSize: SCREEN_WIDTH * 0.035, paddingTop:20, }]}>Versiyon: 1.0.2</Text>
         </View>
 
       </ScrollView>
@@ -303,15 +309,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 40,         // sabit padding top
-    paddingHorizontal: 18,  // sabit yatay padding
-    //width: 360,             // sabit genişlik
-    //alignSelf: 'center',    // ortalama
+    paddingTop: SCREEN_HEIGHT * 0.06,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
   },
   header: {
-    fontSize: 25,
+    fontSize: SCREEN_WIDTH * 0.07,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: SCREEN_HEIGHT * 0.03,
     textAlign: 'center',
     color: '#222',
   },
@@ -364,9 +368,22 @@ const styles = StyleSheet.create({
     color: '#444',
   },
   logoutButton: {
-    borderBottomWidth: 0,
-    marginTop: 16,
+    marginTop: 20,
+    backgroundColor: '#f44336',
+    paddingVertical: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // dilersen genişliği ayarla
+    alignSelf: 'center', // İşte burası yatay ortalama için
+    width: '50%',
   },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

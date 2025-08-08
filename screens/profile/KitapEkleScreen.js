@@ -6,12 +6,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { auth, db } from '../../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function KitapEkleScreen() {
   const [bookName, setBookName] = useState('');
@@ -161,13 +164,11 @@ export default function KitapEkleScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex:1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
     backgroundColor: '#fff',
-    width: 360,       // Sabit genişlik
-    alignSelf: 'center', // Ortalamak için
   },
   headerContainer: {
     width: 360,

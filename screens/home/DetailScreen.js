@@ -40,6 +40,16 @@ const generateUUID = () => {
   });
 };
 
+//Şikayyet sebebi seçimi
+const reasons = [
+  'Spam veya alakasız içerik',
+  'Nefret söylemi veya saldırgan dil',
+  'Yanıltıcı bilgi',
+  'Taciz veya zorbalık',
+  'Diğer',
+];
+
+
 function ErrorModal({ visible, message, onClose }) {
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -55,6 +65,7 @@ function ErrorModal({ visible, message, onClose }) {
     </Modal>
   );
 }
+
 
 export default function DetailScreen({ route, navigation }) {
   const { book } = route.params;
@@ -74,6 +85,13 @@ export default function DetailScreen({ route, navigation }) {
   const { addFavorite, addLikedBook } = useContext(FavoritesContext);
 
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  //şikayet yorum/alıntı
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedReportItem, setSelectedReportItem] = useState(null);
+
+  //şikayet sebebi
+  const [selectedReason, setSelectedReason] = useState(null);
 
 
 
@@ -143,21 +161,24 @@ export default function DetailScreen({ route, navigation }) {
       setLoading(true);
       try {
         const docSnap = await getDoc(bookDocRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setComments((data.comments || []).filter(item => item.id));
-          setQuotes((data.quotes || []).filter(item => item.id));
-        } else {
+        if (!docSnap.exists()) {
           await setDoc(bookDocRef, {
             title: book.title,
             author: book.author,
             coverImageUrl: book.coverImageUrl || null,
-            comments: [],
-            quotes: [],
           });
-          setComments([]);
-          setQuotes([]);
         }
+
+        // Yorumları çek
+        const commentsDoc = await getDoc(doc(db, 'comments', docId));
+        const commentsData = commentsDoc.exists() ? commentsDoc.data().entries || [] : [];
+
+        // Alıntıları çek
+        const quotesDoc = await getDoc(doc(db, 'quotes', docId));
+        const quotesData = quotesDoc.exists() ? quotesDoc.data().entries || [] : [];
+
+        setComments(commentsData.filter(item => item.id));
+        setQuotes(quotesData.filter(item => item.id));
       } catch (error) {
         showError('Kitap verileri yüklenirken hata oluştu.');
       } finally {
@@ -166,6 +187,7 @@ export default function DetailScreen({ route, navigation }) {
     };
     fetchBookData();
   }, [bookDocRef]);
+
 
   useEffect(() => {
     const keyboardDidShow = Keyboard.addListener('keyboardDidShow', (event) => {
@@ -189,30 +211,96 @@ export default function DetailScreen({ route, navigation }) {
     const trimmed = text.trim();
     if (!trimmed) return showError(`${type === 'comments' ? 'Yorum' : 'Alıntı'} boş olamaz.`);
     if (!user) return showError('Kullanıcı bilgisi alınamadı. Lütfen giriş yapınız.');
+
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const username = userDoc.exists() ? userDoc.data().username || 'Anonim' : 'Anonim';
-      const newEntry = { id: generateUUID(), userId: user.uid, username, text: trimmed };
-      await updateDoc(bookDocRef, { [type]: arrayUnion(newEntry) });
+
+      const newEntry = {
+        id: generateUUID(),
+        userId: user.uid,
+        username,
+        text: trimmed,
+        createdAt: Timestamp.now(),
+      };
+
+      const collectionName = type === 'comments' ? 'comments' : 'quotes';
+      const docRef = doc(db, collectionName, docId); // temizlenmiş kitap ID
+
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        // Doküman varsa entries arrayine ekle
+        await updateDoc(docRef, {
+          entries: arrayUnion(newEntry),
+        });
+      } else {
+        // Doküman yoksa oluştur, title ve author ile birlikte
+        await setDoc(docRef, {
+          title: book.title || 'Bilinmeyen Kitap',
+          author: book.author || 'Bilinmeyen Yazar',
+          entries: [newEntry],
+        });
+      }
+
+      // UI state güncelle
       if (type === 'comments') {
-        setComments((prev) => [...prev, newEntry]);
+        setComments(prev => [...prev, newEntry]);
         setNewComment('');
       } else {
-        setQuotes((prev) => [...prev, newEntry]);
+        setQuotes(prev => [...prev, newEntry]);
         setNewQuote('');
       }
+
       Keyboard.dismiss();
     } catch (error) {
       showError(`${type === 'comments' ? 'Yorum' : 'Alıntı'} eklenirken hata oluştu.`);
     }
   };
 
+
   const renderItem = ({ item }) => (
     <View style={styles.listItem}>
-      <Text style={styles.listText}>{item.text}</Text>
-      <Text style={styles.userText}>— {item.username || 'Anonim'}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.listText}>{item.text}</Text>
+          <Text style={styles.userText}>— {item.username || 'Anonim'}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedReportItem(item);
+            setReportModalVisible(true);
+          }}
+          style={{ marginLeft: 10 }}
+        >
+          <Ionicons name="alert-circle-outline" size={24} color="red" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
+
+  const sendReport = async () => {
+    if (!user || !selectedReportItem) return;
+
+    try {
+      await setDoc(doc(db, 'reports', generateUUID()), {
+        type: activeTab === 'comments' ? 'comment' : 'quote',
+        text: selectedReportItem.text,
+        username: selectedReportItem.username || 'Anonim',
+        bookTitle: book.title || 'Bilinmeyen Kitap',
+        userId: user.uid,
+        createdAt: Timestamp.now(),
+        reason: selectedReason,
+      });
+
+      setReportModalVisible(false);
+      showFeedback('Şikayetiniz gönderildi.');
+    } catch (error) {
+      showFeedback('Şikayet gönderilirken hata oluştu.');
+    }
+  };
+
+
 
   return (
     <>
@@ -325,6 +413,55 @@ export default function DetailScreen({ route, navigation }) {
         </KeyboardAvoidingView>
       </SafeAreaView>
 
+      <Modal visible={reportModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Bu içerik topluluk kurallarımıza aykırı mı?</Text>
+            <Text style={[styles.modalText, { fontSize: 14, marginTop: 8, fontStyle: 'italic' }]}>
+              "{selectedReportItem?.text}"
+            </Text>
+
+            <Text style={{ marginTop: 16, fontWeight: '600' }}>Şikayet Sebebi Seçin:</Text>
+            {reasons.map((reason, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => setSelectedReason(reason)}
+                style={{
+                  paddingVertical: 8,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#eee',
+                  backgroundColor: selectedReason === reason ? '#f0f0f0' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 16, color: '#333' }}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={{ flexDirection: 'row', marginTop: 20, justifyContent: 'flex-end' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setReportModalVisible(false);
+                  setSelectedReason(null);
+                }}
+                style={[styles.errorModalButton, { backgroundColor: '#ccc', marginRight: 10 }]}
+              >
+                <Text style={[styles.errorModalButtonText, { color: '#333' }]}>İptal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={sendReport}
+                disabled={!selectedReason}
+                style={[
+                  styles.errorModalButton,
+                  { backgroundColor: selectedReason ? 'red' : '#aaa' },
+                ]}
+              >
+                <Text style={styles.errorModalButtonText}>Şikayet Et</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={titleModalVisible} transparent animationType="slide">
         <View style={styles.modalBackground}>
