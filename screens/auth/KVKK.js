@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width, height } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 
 export default function KVKK({ navigation }) {
   return (
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: SCREEN_HEIGHT * 0.06,
   },
   container: {
     flex: 1,

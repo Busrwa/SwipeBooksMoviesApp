@@ -7,6 +7,9 @@ import { FavoritesProvider } from './context/FavoritesContext';
 
 import { StatusBar } from 'react-native';
 
+import { ThemeProvider } from './context/ThemeContext';
+
+
 
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -31,7 +34,9 @@ export default function App() {
         backgroundColor="transparent" // Arka plan transparan yap
         hidden={false}           // StatusBar görünür kalsın
       />
-      <AppNavigator />
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
     </>
   );
 }
